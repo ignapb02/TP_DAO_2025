@@ -17,3 +17,12 @@ def crear_especialidad():
 def obtener_especialidades():
     especialidades = EspecialidadService.obtener_todas()
     return jsonify([e.to_dict() for e in especialidades])
+
+
+@especialidad_bp.get("/<int:id_especialidad>")
+def obtener_especialidad(id_especialidad):
+    try:
+        especialidad = EspecialidadService.obtener_especialidad(id_especialidad)
+        return jsonify(especialidad.to_dict())
+    except Exception as e:
+        return jsonify({"error": str(e)}), 404

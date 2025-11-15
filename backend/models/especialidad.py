@@ -10,3 +10,9 @@ class Especialidad(db.Model):
 
     def __init__(self, nombre):
         self.nombre = nombre
+
+    def to_dict(self):
+        return {
+            "id_especialidad": self.id_especialidad,
+            "nombre": self.nombre
+        }

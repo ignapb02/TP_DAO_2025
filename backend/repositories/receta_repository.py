@@ -15,6 +15,10 @@ class RecetaRepository:
         return Receta.query.get(id_receta)
 
     @staticmethod
+    def obtener_todos():
+        return Receta.query.all()
+
+    @staticmethod
     def obtener_por_historial(id_historial):
         return Receta.query.filter_by(historial_id=id_historial).first()
 

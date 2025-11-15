@@ -19,6 +19,10 @@ class RecordatorioRepository:
         return Recordatorio.query.get(id_recordatorio)
 
     @staticmethod
+    def obtener_todos():
+        return Recordatorio.query.all()
+
+    @staticmethod
     def eliminar(id_recordatorio):
         recordatorio = Recordatorio.query.get(id_recordatorio)
         if not recordatorio:

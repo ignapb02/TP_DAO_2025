@@ -8,3 +8,18 @@ def crear_receta():
     data = request.json
     receta = RecetaService.crear_receta(data["id_historial"])
     return jsonify({"msg": "Receta creada", "receta": receta.to_dict()}), 201
+
+
+@receta_bp.get("/")
+def obtener_recetas():
+    recetas = RecetaService.obtener_todas()
+    return jsonify([r.to_dict() for r in recetas]), 200
+
+
+@receta_bp.get("/<int:id_receta>")
+def obtener_receta(id_receta):
+    try:
+        receta = RecetaService.obtener_receta(id_receta)
+        return jsonify(receta.to_dict())
+    except Exception as e:
+        return jsonify({"error": str(e)}), 404

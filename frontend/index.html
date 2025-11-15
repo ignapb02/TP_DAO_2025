@@ -1,0 +1,59 @@
+﻿<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Turnero Médico - Dashboard</title>
+    <link rel="icon" type="image/svg+xml" href="favicon.svg">
+    <link rel="stylesheet" href="css/styles.css">
+</head>
+<body>
+    <div class="container">
+        <!-- Sidebar Navigation -->
+        <aside class="sidebar">
+                <div class="sidebar-header">
+                <h1>🏥 Turnero Médico</h1>
+            </div>
+            <nav class="sidebar-menu">
+                <a href="#" data-page="dashboard" class="menu-item active">
+                    <span class="icon">📊</span> Dashboard
+                </a>
+                <a href="#" data-page="pacientes" class="menu-item">
+                    <span class="icon">👥</span> Pacientes
+                </a>
+                <a href="#" data-page="medicos" class="menu-item">
+                    <span class="icon">🩺</span> Médicos
+                </a>
+                <a href="#" data-page="especialidades" class="menu-item">
+                    <span class="icon">📚</span> Especialidades
+                </a>
+                <a href="#" data-page="calendario" class="menu-item">
+                    <span class="icon">📅</span> Calendario
+                </a>
+            </nav>
+        </aside>
+
+        <!-- Main Content -->
+        <main class="main-content">
+            <!-- Header -->
+            <header class="header">
+                <h2 id="page-title">Dashboard</h2>
+                <div class="header-actions">
+                    <span id="current-date"></span>
+                </div>
+            </header>
+
+            <!-- Content Area -->
+            <div id="content" class="content">
+                <!-- El contenido se cargará dinámicamente aquí -->
+            </div>
+        </main>
+    </div>
+
+    <script src="js/api.js"></script>
+    <script src="js/ui.js"></script>
+    <script src="js/app.js"></script>
+    <script src="js/calendar_override.js"></script>
+</body>
+</html>
+

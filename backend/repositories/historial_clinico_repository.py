@@ -15,6 +15,10 @@ class HistorialClinicoRepository:
         return HistorialClinico.query.get(id_historial)
 
     @staticmethod
+    def obtener_todos():
+        return HistorialClinico.query.all()
+
+    @staticmethod
     def obtener_por_paciente(id_paciente):
         return HistorialClinico.query.filter_by(paciente_id=id_paciente).all()
 

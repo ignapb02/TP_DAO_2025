@@ -1,0 +1,48 @@
+{
+    // Use IntelliSense para saber los atributos posibles.
+    // Mantenga el puntero para ver las descripciones de los existentes atributos.
+    // Para más información, visite: https://go.microsoft.com/fwlink/?linkid=830387
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "name": "Run Frontend (serve_frontend.py)",
+            "type": "python",
+            "request": "launch",
+            "program": "${workspaceFolder}/serve_frontend.py",
+            "console": "integratedTerminal",
+            "cwd": "${workspaceFolder}",
+            "env": {}
+        },
+        {
+            "name": "Run Backend (backend.app)",
+            "type": "python",
+            "request": "launch",
+            "module": "backend.app",
+            "console": "integratedTerminal",
+            "cwd": "${workspaceFolder}",
+            "env": {
+                "PYTHONUNBUFFERED": "1",
+                "START_FRONTEND": "0"
+            }
+        },
+        {
+            "type": "chrome",
+            "request": "launch",
+            "name": "Iniciar Chrome para frontend",
+            "url": "http://localhost:8000",
+            "webRoot": "${workspaceFolder}/frontend",
+            "runtimeArgs": ["--new-window", "--incognito"],
+            "userDataDir": "${workspaceFolder}/.vscode/chrome"
+        }
+    ],
+    "compounds": [
+        {
+            "name": "Iniciar proyecto (Full)",
+            "configurations": [
+                "Run Frontend (serve_frontend.py)",
+                "Run Backend (backend.app)",
+                "Iniciar Chrome para frontend"
+            ]
+        }
+    ]
+}

@@ -3,6 +3,12 @@ from backend.services.historial_service import HistorialService
 
 historial_bp = Blueprint("historial_bp", __name__, url_prefix="/historial")
 
+@historial_bp.get("/")
+def obtener_historiales():
+    historiales = HistorialService.obtener_todos()
+    return jsonify([h.to_dict() for h in historiales]), 200
+
+
 @historial_bp.get("/paciente/<int:id_paciente>")
 def historial_paciente(id_paciente):
     historial = HistorialService.obtener_historial_paciente(id_paciente)

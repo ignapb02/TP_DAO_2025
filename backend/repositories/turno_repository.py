@@ -4,8 +4,8 @@ from backend.models.turno import Turno
 class TurnoRepository:
 
     @staticmethod
-    def crear(paciente_id, medico_id, especialidad_id, fecha, hora, estado="pendiente"):
-        turno = Turno(paciente_id, medico_id, especialidad_id, fecha, hora, estado)
+    def crear(paciente_id, medico_id, especialidad_id, fecha, hora, duracion_minutos=30, estado="pendiente"):
+        turno = Turno(paciente_id, medico_id, especialidad_id, fecha, hora, duracion_minutos, estado)
         db.session.add(turno)
         db.session.commit()
         return turno

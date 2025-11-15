@@ -13,3 +13,10 @@ class EspecialidadService:
     @staticmethod
     def obtener_todas():
         return EspecialidadRepository.obtener_todos()
+
+    @staticmethod
+    def obtener_especialidad(id_especialidad):
+        especialidad = EspecialidadRepository.obtener_por_id(id_especialidad)
+        if not especialidad:
+            raise ValueError("Especialidad no encontrada.")
+        return especialidad

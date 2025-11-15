@@ -10,6 +10,7 @@ class Turno(db.Model):
 
     fecha = db.Column(db.String(20), nullable=False)
     hora = db.Column(db.String(10), nullable=False)
+    duracion_minutos = db.Column(db.Integer, default=30)  # Duración en minutos
     estado = db.Column(db.String(20), default="pendiente")
 
     paciente = db.relationship("Paciente", back_populates="turnos")
@@ -19,10 +20,23 @@ class Turno(db.Model):
     historial = db.relationship("HistorialClinico", uselist=False, back_populates="turno")
     recordatorio = db.relationship("Recordatorio", uselist=False, back_populates="turno")
 
-    def __init__(self, paciente_id, medico_id, especialidad_id, fecha, hora, estado="pendiente"):
+    def __init__(self, paciente_id, medico_id, especialidad_id, fecha, hora, duracion_minutos=30, estado="pendiente"):
         self.paciente_id = paciente_id
         self.medico_id = medico_id
         self.especialidad_id = especialidad_id
         self.fecha = fecha
         self.hora = hora
+        self.duracion_minutos = duracion_minutos
         self.estado = estado
+
+    def to_dict(self):
+        return {
+            "id_turno": self.id_turno,
+            "paciente_id": self.paciente_id,
+            "medico_id": self.medico_id,
+            "especialidad_id": self.especialidad_id,
+            "fecha": self.fecha,
+            "hora": self.hora,
+            "duracion_minutos": self.duracion_minutos,
+            "estado": self.estado
+        }

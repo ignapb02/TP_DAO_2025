@@ -7,5 +7,9 @@ class HistorialService:
         return HistorialClinicoRepository.crear(paciente_id, turno_id)
 
     @staticmethod
+    def obtener_todos():
+        return HistorialClinicoRepository.obtener_todos()
+
+    @staticmethod
     def obtener_historial_paciente(id_paciente):
         return HistorialClinicoRepository.obtener_por_paciente(id_paciente)

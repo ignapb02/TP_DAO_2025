@@ -10,3 +10,9 @@ class Recordatorio(db.Model):
 
     def __init__(self, turno_id):
         self.turno_id = turno_id
+
+    def to_dict(self):
+        return {
+            "id_recordatorio": self.id_recordatorio,
+            "turno_id": self.turno_id
+        }

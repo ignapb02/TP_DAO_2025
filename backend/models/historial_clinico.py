@@ -14,3 +14,10 @@ class HistorialClinico(db.Model):
     def __init__(self, paciente_id, turno_id):
         self.paciente_id = paciente_id
         self.turno_id = turno_id
+
+    def to_dict(self):
+        return {
+            "id_historial": self.id_historial,
+            "paciente_id": self.paciente_id,
+            "turno_id": self.turno_id
+        }

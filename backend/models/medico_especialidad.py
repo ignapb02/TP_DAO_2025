@@ -17,3 +17,11 @@ class MedicoEspecialidad(db.Model):
         self.especialidad_id = especialidad_id
         self.principal = principal
         self.fecha_obtencion = fecha_obtencion
+
+    def to_dict(self):
+        return {
+            "medico_id": self.medico_id,
+            "especialidad_id": self.especialidad_id,
+            "principal": self.principal,
+            "fecha_obtencion": str(self.fecha_obtencion) if self.fecha_obtencion else None
+        }

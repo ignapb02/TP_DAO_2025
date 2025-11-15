@@ -10,3 +10,9 @@ class Receta(db.Model):
 
     def __init__(self, historial_id):
         self.historial_id = historial_id
+
+    def to_dict(self):
+        return {
+            "id_receta": self.id_receta,
+            "historial_id": self.historial_id
+        }

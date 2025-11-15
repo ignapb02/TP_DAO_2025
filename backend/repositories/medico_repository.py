@@ -4,8 +4,8 @@ from backend.models.medico import Medico
 class MedicoRepository:
 
     @staticmethod
-    def crear(nombre, apellido, matricula, email, telefono, dni):
-        medico = Medico(nombre, apellido, matricula, email, telefono, dni)
+    def crear(nombre, apellido, matricula, email, dni, telefono=None):
+        medico = Medico(nombre, apellido, matricula, email, dni, telefono)
         db.session.add(medico)
         db.session.commit()
         return medico

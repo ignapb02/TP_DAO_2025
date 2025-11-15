@@ -22,3 +22,32 @@ class MedicoEspecialidadService:
         return MedicoEspecialidadRepository.asignar(
             medico_id, especialidad_id, principal, fecha_obtencion
         )
+    
+    @staticmethod
+    def obtener_especialidades_medico(medico_id):
+        medico = MedicoRepository.obtener_por_id(medico_id)
+        if not medico:
+            raise ValueError("Médico no encontrado.")
+        return medico.especialidades
+
+    @staticmethod
+    def obtener_medicos_por_especialidad(especialidad_id):
+        # Retornar lista de médicos que tienen asignada la especialidad indicada
+        especial = EspecialidadRepository.obtener_por_id(especialidad_id)
+        if not especial:
+            raise ValueError("Especialidad no encontrada.")
+
+        medicos = MedicoRepository.obtener_todos()
+        resultado = []
+        for m in medicos:
+            # m.especialidades es una lista de MedicoEspecialidad
+            if any(me.especialidad_id == especialidad_id for me in m.especialidades):
+                resultado.append(m)
+        return resultado
+    
+    @staticmethod
+    def eliminar_especialidad(medico_id, especialidad_id):
+        relacion = MedicoEspecialidadRepository.obtener(medico_id, especialidad_id)
+        if not relacion:
+            raise ValueError("La asignación no existe.")
+        return MedicoEspecialidadRepository.eliminar(medico_id, especialidad_id)

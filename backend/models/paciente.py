@@ -22,3 +22,13 @@ class Paciente(db.Model):
 
     def nombre_completo(self):
         return f"{self.apellido}, {self.nombre}"
+
+    def to_dict(self):
+        return {
+            "id_paciente": self.id_paciente,
+            "nombre": self.nombre,
+            "apellido": self.apellido,
+            "dni": self.dni,
+            "email": self.email,
+            "telefono": self.telefono
+        }
