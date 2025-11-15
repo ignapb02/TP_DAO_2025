@@ -26,3 +26,23 @@ def obtener_especialidad(id_especialidad):
         return jsonify(especialidad.to_dict())
     except Exception as e:
         return jsonify({"error": str(e)}), 404
+
+@especialidad_bp.put("/<int:id_especialidad>")
+def actualizar_especialidad(id_especialidad):
+    data = request.json
+    try:
+        esp = EspecialidadService.actualizar_especialidad(id_especialidad, data["nombre"])
+        return jsonify({"msg": "Especialidad actualizada", "especialidad": esp.to_dict()})
+    except Exception as e:
+        return jsonify({"error": str(e)}), 400
+    
+@especialidad_bp.delete("/<int:id_especialidad>")
+def eliminar_especialidad(id_especialidad):
+    try:
+        ok = EspecialidadService.eliminar_especialidad(id_especialidad)
+        if ok:
+            return jsonify({"msg": "Especialidad eliminada"}), 200
+        else:
+            return jsonify({"error": "Especialidad no encontrada"}), 404
+    except Exception as e:
+        return jsonify({"error": str(e)}), 400

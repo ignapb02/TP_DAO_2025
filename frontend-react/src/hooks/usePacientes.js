@@ -56,5 +56,13 @@ export function usePacientes() {
         cargarPacientes();
     }, []);
 
-    return { pacientes, loading, error, cargarPacientes };
+    return { 
+        pacientes, 
+        loading, 
+        error, 
+        cargarPacientes,
+        crearPaciente,
+        actualizarPaciente,
+        eliminarPaciente
+    };
 }

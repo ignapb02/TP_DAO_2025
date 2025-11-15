@@ -27,16 +27,19 @@ export function useEspecialidades() {
             setEspecialidades([...especialidades, res.data]);
             return res.data;
         } catch (err) {
-            throw new Error("Error al crear especialidad");
+            const msg = err?.response?.data?.error || err.message || "Error al crear especialidad";
+            throw new Error(msg);
         }
     };
 
     const actualizarEspecialidad = async (id, datos) => {
         try {
-            await axiosClient.put(`/especialidades/${id}`, datos);
+            const res = await axiosClient.put(`/especialidades/${id}`, datos);
             setEspecialidades(especialidades.map(e => e.id_especialidad === id ? { ...e, ...datos } : e));
+            return res.data || null;
         } catch (err) {
-            throw new Error("Error al actualizar especialidad");
+            const msg = err?.response?.data?.error || err.message || "Error al actualizar especialidad";
+            throw new Error(msg);
         }
     };
 
@@ -44,8 +47,10 @@ export function useEspecialidades() {
         try {
             await axiosClient.delete(`/especialidades/${id}`);
             setEspecialidades(especialidades.filter(e => e.id_especialidad !== id));
+            return true;
         } catch (err) {
-            throw new Error("Error al eliminar especialidad");
+            const msg = err?.response?.data?.error || err.message || "Error al eliminar especialidad";
+            throw new Error(msg);
         }
     };
 

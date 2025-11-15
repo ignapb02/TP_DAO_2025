@@ -33,10 +33,12 @@ export function useMedicos() {
 
     const actualizarMedico = async (id, datos) => {
         try {
-            await axiosClient.put(`/medicos/${id}`, datos);
+            const res = await axiosClient.put(`/medicos/${id}`, datos);
             setMedicos(medicos.map(m => m.id_medico === id ? { ...m, ...datos } : m));
+            return res.data || null;
         } catch (err) {
-            throw new Error("Error al actualizar médico");
+            const msg = err?.response?.data?.error || err.message || "Error al actualizar médico";
+            throw new Error(msg);
         }
     };
 
