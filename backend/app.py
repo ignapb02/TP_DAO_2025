@@ -18,8 +18,16 @@ def create_app():
     db.init_app(app)
 
     # Habilitar CORS - Permitir peticiones desde el frontend
-    CORS(app, 
-         origins=["http://localhost:8080", "http://127.0.0.1:8080", "http://localhost:8000", "http://127.0.0.1:8000"],
+    # Aceptar requests desde los orígenes habituales del frontend (incluye Vite en 5173)
+    CORS(app,
+         origins=[
+             "http://localhost:8080",
+             "http://127.0.0.1:8080",
+             "http://localhost:8000",
+             "http://127.0.0.1:8000",
+             "http://localhost:5173",
+             "http://127.0.0.1:5173"
+         ],
          methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"],
          allow_headers=["Content-Type", "Accept"],
          supports_credentials=True)
