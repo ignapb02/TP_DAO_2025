@@ -38,5 +38,13 @@ class Turno(db.Model):
             "fecha": self.fecha,
             "hora": self.hora,
             "duracion_minutos": self.duracion_minutos,
-            "estado": self.estado
+            "estado": self.estado,
+            # Datos del paciente
+            "paciente_nombre": self.paciente.nombre if self.paciente else None,
+            "paciente_apellido": self.paciente.apellido if self.paciente else None,
+            # Datos de la especialidad
+            "especialidad_nombre": self.especialidad.nombre if self.especialidad else None,
+            # Datos del médico (opcional, por si se necesita)
+            "medico_nombre": self.medico.nombre if self.medico else None,
+            "medico_apellido": self.medico.apellido if self.medico else None
         }

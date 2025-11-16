@@ -1,14 +1,25 @@
 import { NavLink } from 'react-router-dom';
+import { useAuth } from '../context/AuthContext';
 
 export default function Sidebar({ isOpen = false, onClose = () => {} }) {
-    const menuItems = [
-        { to: '/', id: 'dashboard', label: 'Dashboard', icon: '📊' },
+    const { isAdmin } = useAuth();
+    
+    // Menú completo para admin
+    const adminMenuItems = [
+        { to: '/dashboard', id: 'dashboard', label: 'Dashboard', icon: '📊' },
         { to: '/pacientes', id: 'pacientes', label: 'Pacientes', icon: '👥' },
         { to: '/medicos', id: 'medicos', label: 'Médicos', icon: '🩺' },
         { to: '/especialidades', id: 'especialidades', label: 'Especialidades', icon: '📚' },
         { to: '/calendario', id: 'calendario', label: 'Calendario', icon: '📅' },
         { to: '/turnos', id: 'turnos', label: 'Turnos', icon: '⏰' },
     ];
+    
+    // Menú simplificado para médicos
+    const medicoMenuItems = [
+        { to: '/mis-turnos', id: 'mis-turnos', label: 'Mis Turnos', icon: '📋' },
+    ];
+    
+    const menuItems = isAdmin ? adminMenuItems : medicoMenuItems;
 
     return (
         <aside className={`sidebar ${isOpen ? 'open' : ''}`}>

@@ -69,3 +69,24 @@ def turnos_paciente(id_paciente):
         return jsonify([t.to_dict() for t in turnos])
     except Exception as e:
         return jsonify({"error": str(e)}), 500
+
+
+@turno_bp.post("/<int:id_turno>/atender")
+def atender_turno(id_turno):
+    """Endpoint para que el médico atienda un turno y cree historial clínico"""
+    data = request.json
+    try:
+        resultado = TurnoService.atender_turno(
+            id_turno,
+            data.get("diagnostico"),
+            data.get("tratamiento"),
+            data.get("observaciones")
+        )
+        return jsonify(resultado), 200
+    except ValueError as e:
+        return jsonify({"error": str(e)}), 400
+    except Exception as e:
+        import traceback
+        print(f"Error al atender turno: {str(e)}")
+        print(traceback.format_exc())
+        return jsonify({"error": f"Error al atender turno: {str(e)}"}), 500

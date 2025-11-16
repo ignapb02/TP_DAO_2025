@@ -48,6 +48,7 @@ def create_app():
     from backend.controllers.historial_controller import historial_bp
     from backend.controllers.receta_controller import receta_bp
     from backend.controllers.recordatorio_controller import recordatorio_bp
+    from backend.controllers.auth_controller import auth_bp
 
     # REGISTRAR BLUEPRINTS
     app.register_blueprint(paciente_bp, url_prefix="/pacientes")
@@ -58,6 +59,7 @@ def create_app():
     app.register_blueprint(historial_bp, url_prefix="/historial")
     app.register_blueprint(receta_bp, url_prefix="/recetas")
     app.register_blueprint(recordatorio_bp, url_prefix="/recordatorios")
+    app.register_blueprint(auth_bp, url_prefix="/auth")
 
     @app.route("/")
     def home():

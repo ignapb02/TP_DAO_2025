@@ -4,8 +4,8 @@ from backend.models.receta import Receta
 class RecetaRepository:
 
     @staticmethod
-    def crear(historial_id):
-        receta = Receta(historial_id)
+    def crear(historial_id, medicamentos=None, indicaciones=None, fecha_emision=None):
+        receta = Receta(historial_id, medicamentos, indicaciones, fecha_emision)
         db.session.add(receta)
         db.session.commit()
         return receta
