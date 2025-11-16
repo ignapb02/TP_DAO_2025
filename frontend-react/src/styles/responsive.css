@@ -1,0 +1,155 @@
+/* ===========================
+   SIDEBAR TOGGLE (Hidden on Desktop)
+   =========================== */
+.sidebar-toggle {
+    display: none !important;
+}
+
+/* Show toggle only on tablets and mobile */
+@media (max-width: 1024px) {
+    .sidebar-toggle {
+        display: inline-flex !important;
+        margin-right: 10px;
+        align-items: center;
+        justify-content: center;
+    }
+}
+
+/* ===========================
+   MOBILE SIDEBAR BEHAVIOR
+   =========================== */
+@media (max-width: 768px) {
+    .sidebar {
+        transform: translateX(-100%);
+        width: 240px;
+        left: 0;
+        top: 0;
+        height: 100vh;
+        z-index: 1100;
+        transition: transform 0.3s ease;
+    }
+
+    .sidebar.open {
+        transform: translateX(0);
+    }
+
+    .sidebar .close-btn {
+        display: inline-block;
+        position: absolute;
+        right: 12px;
+        top: 12px;
+        background: none;
+        color: white;
+        font-size: 1.5rem;
+        border: none;
+        cursor: pointer;
+    }
+
+    .sidebar-backdrop {
+        position: fixed;
+        inset: 0;
+        background: rgba(0, 0, 0, 0.45);
+        opacity: 0;
+        visibility: hidden;
+        transition: opacity 0.3s ease, visibility 0.3s ease;
+        z-index: 1050;
+    }
+
+    .sidebar-backdrop.active {
+        opacity: 1;
+        visibility: visible;
+    }
+
+    .header {
+        align-items: center;
+    }
+
+    .main-content {
+        margin-left: 0;
+    }
+
+    .app-container.sidebar-open .main-content {
+        overflow: hidden;
+    }
+
+    /* Calendar responsive */
+    .calendar-controls {
+        flex-direction: column;
+        gap: 10px;
+    }
+
+    .calendar-controls .form-group {
+        width: 100%;
+    }
+
+    .calendar-weekdays {
+        grid-template-columns: repeat(7, 1fr);
+        gap: 6px;
+        font-size: 0.75rem;
+    }
+
+    .calendar-grid {
+        grid-template-columns: repeat(7, 1fr);
+        grid-auto-rows: 80px;
+        gap: 6px;
+    }
+
+    .calendar-day {
+        padding: 8px;
+        font-size: 0.9rem;
+    }
+
+    .calendar-day .day-number {
+        font-size: 0.9rem;
+    }
+
+    .turno-badge {
+        min-width: 18px;
+        height: 18px;
+        font-size: 0.65rem;
+    }
+}
+
+@media (max-width: 600px) {
+    .sidebar {
+        width: 220px;
+    }
+
+    .sidebar .close-btn {
+        right: 8px;
+        top: 8px;
+    }
+
+    .sidebar-toggle {
+        font-size: 1.1rem;
+        padding: 8px 10px;
+    }
+
+    /* Calendar extra responsive */
+    .calendar-weekdays {
+        grid-template-columns: repeat(7, 1fr);
+        gap: 4px;
+        font-size: 0.65rem;
+    }
+
+    .calendar-grid {
+        grid-template-columns: repeat(7, 1fr);
+        grid-auto-rows: 70px;
+        gap: 4px;
+    }
+
+    .calendar-day {
+        padding: 6px;
+        font-size: 0.8rem;
+    }
+
+    .calendar-day .day-number {
+        font-size: 0.8rem;
+    }
+
+    .turno-badge {
+        min-width: 16px;
+        height: 16px;
+        font-size: 0.6rem;
+    }
+}

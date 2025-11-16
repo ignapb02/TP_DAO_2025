@@ -15,6 +15,12 @@ def obtener_todos_turnos():
 def crear_turno():
     data = request.json
     try:
+        # Validar que los datos requeridos estén presentes
+        required_fields = ['paciente_id', 'medico_id', 'especialidad_id', 'fecha', 'hora']
+        for field in required_fields:
+            if field not in data or not data.get(field):
+                return jsonify({"error": f"Campo requerido faltante: {field}"}), 400
+
         turno = TurnoService.crear_turno(
             data.get("paciente_id"),
             data.get("medico_id"),
@@ -26,7 +32,11 @@ def crear_turno():
         return jsonify({"msg": "Turno creado correctamente", "turno": turno.to_dict()}), 201
 
     except ValueError as e:
-        return jsonify({"error": str(e)}), 400
+        # Errores de validación del servicio
+        error_msg = str(e)
+        return jsonify({"error": error_msg}), 400
+    except KeyError as e:
+        return jsonify({"error": f"Parámetro faltante: {str(e)}"}), 400
     except Exception as e:
         return jsonify({"error": f"Error al crear turno: {str(e)}"}), 500
 
