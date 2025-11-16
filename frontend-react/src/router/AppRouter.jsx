@@ -10,6 +10,7 @@ import TurnosPage from "../pages/TurnosPage";
 import EspecialidadesPage from "../pages/EspecialidadesPage";
 import CalendarioPage from "../pages/CalendarioPage";
 import NotFound from "../pages/NotFound";
+import EstadoTurnosMasivo from "../pages/EstadoTurnosMasivo";
 
 function AppRouterContent() {
     const location = useLocation();
@@ -51,6 +52,7 @@ function AppRouterContent() {
                 <Route path="/turnos" element={<TurnosPage showAlert={showAlert} />} />
                 <Route path="/especialidades" element={<EspecialidadesPage showAlert={showAlert} />} />
                 <Route path="/calendario" element={<CalendarioPage showAlert={showAlert} />} />
+                <Route path="/estado-turnos" element={<EstadoTurnosMasivo />} />
                 <Route path="*" element={<NotFound />} />
             </Routes>
         </Layout>

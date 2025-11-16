@@ -22,10 +22,11 @@ export function useTurnos() {
     const crearTurno = async (datos) => {
         try {
             const res = await axiosClient.post("/turnos/", datos);
-            setTurnos([...turnos, res.data]);
-            return res.data;
+            setTurnos([...turnos, res.data.turno]);
+            return res.data.turno;
         } catch (err) {
-            throw new Error("Error al crear turno");
+            // El error se lanza tal como viene del servidor o del cliente
+            throw err;
         }
     };
 

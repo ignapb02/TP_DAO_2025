@@ -7,6 +7,7 @@ import { useEspecialidades } from '../hooks/useEspecialidades';
 import { useMedicos } from '../hooks/useMedicos';
 import { useTurnos } from '../hooks/useTurnos';
 import { usePacientes } from '../hooks/usePacientes';
+import { useHistorial } from '../hooks/useHistorial';
 import { formatDateForInput, calcularHoraFin } from '../utils/helpers';
 import axiosClient from '../api/axiosClient';
 
@@ -20,6 +21,11 @@ export default function CalendarioPage({ showAlert }) {
     const [turnosDia, setTurnosDia] = useState([]);
     const [modalDiaOpen, setModalDiaOpen] = useState(false);
     const [selectedFecha, setSelectedFecha] = useState('');
+    const [modalAtenderOpen, setModalAtenderOpen] = useState(false);
+    const [turnoAtender, setTurnoAtender] = useState(null);
+    const [formHistorial, setFormHistorial] = useState({ motivo: '', observaciones: '' });
+    const [atendiendo, setAtendiendo] = useState(false);
+    const { crearHistorial } = useHistorial();
     const [month, setMonth] = useState(new Date());
     const [allTurnos, setAllTurnos] = useState([]);
     const [loadingTurnos, setLoadingTurnos] = useState(false);
@@ -127,6 +133,44 @@ export default function CalendarioPage({ showAlert }) {
         return date.toLocaleDateString('es-ES', { weekday: 'short' }).toUpperCase();
     };
 
+    // Handler para abrir modal de atención
+    const handleAtenderTurno = (turno) => {
+        setTurnoAtender(turno);
+        setFormHistorial({ motivo: '', observaciones: '' });
+        setModalAtenderOpen(true);
+    };
+
+    // Handler para registrar historia clínica y actualizar estado
+    const handleRegistrarAtencion = async (e) => {
+        e.preventDefault();
+        if (!turnoAtender) return;
+        setAtendiendo(true);
+        try {
+            // Registrar historia clínica
+            await crearHistorial({
+                paciente_id: turnoAtender.paciente_id,
+                medico_id: turnoAtender.medico_id,
+                turno_id: turnoAtender.id_turno,
+                motivo: formHistorial.motivo,
+                observaciones: formHistorial.observaciones
+            });
+            // Actualizar estado del turno
+            await axiosClient.put(`/turnos/${turnoAtender.id_turno}/estado`, { estado: 'atendido' });
+            showAlert('Atención registrada y turno marcado como atendido', 'success');
+            setModalAtenderOpen(false);
+            setModalDiaOpen(false);
+            // Refrescar turnos del médico
+            if (medId) {
+                const res = await axiosClient.get(`/turnos/medico/${medId}`);
+                setAllTurnos(res.data || []);
+            }
+        } catch (err) {
+            showAlert('Error al registrar atención', 'danger');
+        } finally {
+            setAtendiendo(false);
+        }
+    };
+
     return (
         <>
             <Card>
@@ -197,6 +241,7 @@ export default function CalendarioPage({ showAlert }) {
                 </CardBody>
             </Card>
 
+            {/* Modal de turnos del día */}
             <Modal id="modal-dia-turnos" isOpen={modalDiaOpen} onClose={() => setModalDiaOpen(false)} title={`Turnos - ${selectedFecha}`}>
                 <div>
                     {turnosDia.length === 0 ? (
@@ -221,8 +266,8 @@ export default function CalendarioPage({ showAlert }) {
                                             Estado: <span style={{ 
                                                 padding: '2px 6px', 
                                                 borderRadius: '4px',
-                                                backgroundColor: t.estado === 'disponible' ? '#d4edda' : '#f8d7da',
-                                                color: t.estado === 'disponible' ? '#155724' : '#721c24',
+                                                backgroundColor: t.estado === 'disponible' ? '#d4edda' : t.estado === 'programado' ? '#cce5ff' : '#f8d7da',
+                                                color: t.estado === 'disponible' ? '#155724' : t.estado === 'programado' ? '#004085' : '#721c24',
                                                 fontWeight: 500
                                             }}>{t.estado}</span>
                                         </div>
@@ -235,11 +280,40 @@ export default function CalendarioPage({ showAlert }) {
                                             Agendar
                                         </Button>
                                     )}
+                                    {t.estado === 'programado' && (
+                                        <Button variant="success" size="small" onClick={() => handleAtenderTurno(t)} style={{ marginLeft: '10px' }}>
+                                            Atender
+                                        </Button>
+                                    )}
                                 </div>
                             ))}
                         </div>
                     )}
                 </div>
+            </Modal>
+
+            {/* Modal para atender turno y registrar historia clínica */}
+            <Modal id="modal-atender-turno" isOpen={modalAtenderOpen} onClose={() => setModalAtenderOpen(false)} title="Registrar Atención">
+                {turnoAtender && (
+                    <form onSubmit={handleRegistrarAtencion}>
+                        <div className="form-group">
+                            <label>Paciente</label>
+                            <input type="text" value={getNombrePaciente(turnoAtender.paciente_id)} disabled />
+                        </div>
+                        <div className="form-group">
+                            <label>Motivo de consulta</label>
+                            <input type="text" value={formHistorial.motivo} onChange={e => setFormHistorial(f => ({ ...f, motivo: e.target.value }))} required />
+                        </div>
+                        <div className="form-group">
+                            <label>Observaciones</label>
+                            <textarea value={formHistorial.observaciones} onChange={e => setFormHistorial(f => ({ ...f, observaciones: e.target.value }))} rows={3} />
+                        </div>
+                        <div className="form-actions">
+                            <Button variant="secondary" onClick={() => setModalAtenderOpen(false)} type="button">Cancelar</Button>
+                            <Button variant="success" type="submit" disabled={atendiendo}>{atendiendo ? 'Guardando...' : 'Registrar Atención'}</Button>
+                        </div>
+                    </form>
+                )}
             </Modal>
         </>
     );
