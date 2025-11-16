@@ -10,7 +10,7 @@ export default function Sidebar({ isOpen = false, onClose = () => {} }) {
         { to: '/pacientes', id: 'pacientes', label: 'Pacientes', icon: '👥' },
         { to: '/medicos', id: 'medicos', label: 'Médicos', icon: '🩺' },
         { to: '/especialidades', id: 'especialidades', label: 'Especialidades', icon: '📚' },
-        { to: '/calendario', id: 'calendario', label: 'Calendario', icon: '📅' },
+        { to: '/reportes', id: 'reportes', label: 'Reportes', icon: '📈' },
         { to: '/turnos', id: 'turnos', label: 'Turnos', icon: '⏰' },
     ];
     

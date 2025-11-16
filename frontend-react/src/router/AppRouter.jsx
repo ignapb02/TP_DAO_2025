@@ -10,7 +10,7 @@ import PacienteDetallePage from "../pages/PacienteDetallePage";
 import MedicosPage from "../pages/MedicosPage";
 import TurnosPage from "../pages/TurnosPage";
 import EspecialidadesPage from "../pages/EspecialidadesPage";
-import CalendarioPage from "../pages/CalendarioPage";
+import ReportesPage from "../pages/ReportesPage";
 import MisTurnosPage from "../pages/MisTurnosPage";
 import NotFound from "../pages/NotFound";
 import EstadoTurnosMasivo from "../pages/EstadoTurnosMasivo";
@@ -57,7 +57,7 @@ function AppRouterContent() {
         pacientes: 'Gestión de Pacientes',
         medicos: 'Gestión de Médicos',
         especialidades: 'Gestión de Especialidades',
-        calendario: 'Calendario',
+        reportes: 'Reportes',
         turnos: 'Gestión de Turnos',
         'mis-turnos': 'Mis Turnos',
     };
@@ -115,9 +115,9 @@ function AppRouterContent() {
                         <EspecialidadesPage showAlert={showAlert} />
                     </ProtectedRoute>
                 } />
-                <Route path="/calendario" element={
+                <Route path="/reportes" element={
                     <ProtectedRoute requireAdmin>
-                        <CalendarioPage showAlert={showAlert} />
+                        <ReportesPage showAlert={showAlert} />
                     </ProtectedRoute>
                 } />
                 <Route path="/mis-turnos" element={
