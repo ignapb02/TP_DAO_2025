@@ -1,7 +1,12 @@
 import { useEffect, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { useAuth } from '../context/AuthContext';
+import Button from './Button';
 
 export default function Header({ title, onToggleSidebar }) {
     const [currentDate, setCurrentDate] = useState('');
+    const { usuario, logout } = useAuth();
+    const navigate = useNavigate();
 
     useEffect(() => {
         const updateDate = () => {
@@ -22,6 +27,11 @@ export default function Header({ title, onToggleSidebar }) {
         return () => clearInterval(interval);
     }, []);
 
+    const handleLogout = () => {
+        logout();
+        navigate('/login');
+    };
+
     return (
         <header className="header">
             <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
@@ -34,8 +44,18 @@ export default function Header({ title, onToggleSidebar }) {
                 </button>
                 <h2>{title}</h2>
             </div>
-            <div className="header-actions">
+            <div className="header-actions" style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
                 <span>{currentDate}</span>
+                {usuario && (
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                        <span style={{ fontSize: '0.9rem', color: '#666' }}>
+                            {usuario.nombre} {usuario.apellido} ({usuario.rol})
+                        </span>
+                        <Button variant="secondary" size="small" onClick={handleLogout}>
+                            🚪 Salir
+                        </Button>
+                    </div>
+                )}
             </div>
         </header>
     );

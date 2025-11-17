@@ -18,7 +18,7 @@ class MedicoService:
             raise ValueError("El DNI debe contener solo números.")
     
     @staticmethod
-    def registrar_medico(nombre, apellido, matricula, email, dni, telefono=None):
+    def registrar_medico(nombre, apellido, matricula, email, dni, telefono=None, password=None, rol='medico'):
         # Validaciones básicas
         nombre_str = str(nombre).strip() if nombre is not None else ""
         apellido_str = str(apellido).strip() if apellido is not None else ""
@@ -49,7 +49,7 @@ class MedicoService:
         if any(str(m.dni) == str(dni) for m in medicos):
             raise ValueError("El DNI ya está registrado.")
 
-        return MedicoRepository.crear(nombre_str, apellido_str, matricula_str, email_str, dni, telefono)
+        return MedicoRepository.crear(nombre_str, apellido_str, matricula_str, email_str, dni, telefono, password, rol)
 
     @staticmethod
     def obtener_todos():
@@ -92,6 +92,10 @@ class MedicoService:
             if any(str(m.matricula) == matricula_datos for m in otros_medicos):
                 raise ValueError("La matrícula ya está registrada.")
         
+        # Si password está vacío, quitarlo de datos (no actualizar)
+        if 'password' in datos and not datos['password']:
+            del datos['password']
+        
         medico = MedicoRepository.actualizar(id_medico, **datos)
         if not medico:
             raise ValueError("Error al actualizar el médico.")
@@ -99,7 +103,10 @@ class MedicoService:
 
     @staticmethod
     def eliminar_medico(id_medico):
-        ok = MedicoRepository.eliminar(id_medico)
-        if not ok:
-            raise ValueError("Médico no encontrado.")
-        return ok
+        try:
+            ok = MedicoRepository.eliminar(id_medico)
+            if not ok:
+                raise ValueError("Médico no encontrado.")
+            return ok
+        except ValueError:
+            raise

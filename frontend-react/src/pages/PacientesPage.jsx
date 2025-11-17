@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import Card, { CardHeader, CardBody } from '../components/Card';
 import Button from '../components/Button';
 import Modal from '../components/Modal';
@@ -8,6 +9,7 @@ import Loader from '../components/Loader';
 import { usePacientes } from '../hooks/usePacientes';
 
 export default function PacientesPage({ showAlert }) {
+    const navigate = useNavigate();
     const { pacientes, loading, error, cargarPacientes, crearPaciente, actualizarPaciente, eliminarPaciente } = usePacientes();
     const [modalOpen, setModalOpen] = useState(false);
     const [editingId, setEditingId] = useState(null);
@@ -113,6 +115,13 @@ export default function PacientesPage({ showAlert }) {
                         columns={columns}
                         actions={(row) => (
                             <>
+                                <Button 
+                                    variant="primary" 
+                                    size="small"
+                                    onClick={() => navigate(`/pacientes/${row.id_paciente}`)}
+                                >
+                                    👁️ Ver
+                                </Button>
                                 <Button 
                                     variant="secondary" 
                                     size="small"

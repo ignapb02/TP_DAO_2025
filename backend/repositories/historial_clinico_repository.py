@@ -4,8 +4,8 @@ from backend.models.historial_clinico import HistorialClinico
 class HistorialClinicoRepository:
 
     @staticmethod
-    def crear(paciente_id, turno_id):
-        historial = HistorialClinico(paciente_id, turno_id)
+    def crear(paciente_id, turno_id, diagnostico=None, tratamiento=None, observaciones=None, fecha_atencion=None):
+        historial = HistorialClinico(paciente_id, turno_id, diagnostico, tratamiento, observaciones, fecha_atencion)
         db.session.add(historial)
         db.session.commit()
         return historial

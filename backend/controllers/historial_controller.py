@@ -21,7 +21,11 @@ def crear_historial():
     try:
         historial = HistorialService.crear_historial(
             data["paciente_id"],
-            data["turno_id"]
+            data["turno_id"],
+            data.get("diagnostico"),
+            data.get("tratamiento"),
+            data.get("observaciones"),
+            data.get("fecha_atencion")
         )
         return jsonify({"msg": "Historial creado", "historial": historial.to_dict()}), 201
     except Exception as e:

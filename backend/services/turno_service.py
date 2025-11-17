@@ -134,3 +134,39 @@ class TurnoService:
     @staticmethod
     def obtener_todos_turnos():
         return TurnoRepository.obtener_todos()
+    
+    @staticmethod
+    def atender_turno(id_turno, diagnostico, tratamiento, observaciones):
+        """Atiende un turno: crea historial clínico y marca turno como completado"""
+        from backend.repositories.historial_clinico_repository import HistorialClinicoRepository
+        from datetime import datetime
+        
+        # Validar que el turno exista
+        turno = TurnoRepository.obtener_por_id(id_turno)
+        if not turno:
+            raise ValueError("Turno no encontrado")
+        
+        # Validar que el turno esté pendiente
+        if turno.estado == "completado":
+            raise ValueError("Este turno ya fue atendido")
+        if turno.estado == "cancelado":
+            raise ValueError("No se puede atender un turno cancelado")
+        
+        # Crear historial clínico
+        historial = HistorialClinicoRepository.crear(
+            paciente_id=turno.paciente_id,
+            turno_id=id_turno,
+            diagnostico=diagnostico,
+            tratamiento=tratamiento,
+            observaciones=observaciones,
+            fecha_atencion=datetime.now()
+        )
+        
+        # Cambiar estado del turno a completado
+        TurnoService.cambiar_estado(id_turno, "completado")
+        
+        return {
+            "msg": "Turno atendido correctamente",
+            "historial": historial.to_dict(),
+            "turno": turno.to_dict()
+        }

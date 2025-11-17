@@ -6,7 +6,12 @@ receta_bp = Blueprint("receta_bp", __name__, url_prefix="/recetas")
 @receta_bp.post("/")
 def crear_receta():
     data = request.json
-    receta = RecetaService.crear_receta(data["id_historial"])
+    receta = RecetaService.crear_receta(
+        data["id_historial"],
+        data.get("medicamentos"),
+        data.get("indicaciones"),
+        data.get("fecha_emision")
+    )
     return jsonify({"msg": "Receta creada", "receta": receta.to_dict()}), 201
 
 

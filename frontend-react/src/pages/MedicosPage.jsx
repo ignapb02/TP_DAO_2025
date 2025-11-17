@@ -6,9 +6,12 @@ import Table from '../components/Table';
 import Form, { FormGroup, FormRow, FormActions } from '../components/Form';
 import Loader from '../components/Loader';
 import { useMedicos } from '../hooks/useMedicos';
+import { useEspecialidades } from '../hooks/useEspecialidades';
+import axiosClient from '../api/axiosClient';
 
 export default function MedicosPage({ showAlert }) {
     const { medicos, loading, error, cargarMedicos, crearMedico, actualizarMedico, eliminarMedico } = useMedicos();
+    const { especialidades } = useEspecialidades();
     const [modalOpen, setModalOpen] = useState(false);
     const [editingId, setEditingId] = useState(null);
     const [formData, setFormData] = useState({
@@ -17,7 +20,10 @@ export default function MedicosPage({ showAlert }) {
         matricula: '',
         dni: '',
         email: '',
-        telefono: ''
+        telefono: '',
+        password: '',
+        rol: 'medico',
+        especialidades_ids: []
     });
 
     const handleInputChange = (e) => {
@@ -28,16 +34,35 @@ export default function MedicosPage({ showAlert }) {
         }));
     };
 
-    const handleOpenModal = (medico = null) => {
+    const handleEspecialidadesChange = (e) => {
+        const selectedOptions = Array.from(e.target.selectedOptions, option => parseInt(option.value));
+        setFormData(prev => ({
+            ...prev,
+            especialidades_ids: selectedOptions
+        }));
+    };
+
+    const handleOpenModal = async (medico = null) => {
         if (medico) {
             setEditingId(medico.id_medico);
+            // Cargar especialidades actuales del médico
+            let especialidadesActuales = [];
+            try {
+                const res = await axiosClient.get(`/medicos-especialidades/medico/${medico.id_medico}`);
+                especialidadesActuales = res.data.map(e => e.especialidad_id);
+            } catch (err) {
+                console.error('Error al cargar especialidades del médico:', err);
+            }
             setFormData({
                 nombre: medico.nombre,
                 apellido: medico.apellido,
                 matricula: medico.matricula,
                 dni: medico.dni,
                 email: medico.email,
-                telefono: medico.telefono || ''
+                telefono: medico.telefono || '',
+                password: '',  // No pre-llenar password al editar
+                rol: medico.rol || 'medico',
+                especialidades_ids: especialidadesActuales
             });
         } else {
             setEditingId(null);
@@ -47,7 +72,10 @@ export default function MedicosPage({ showAlert }) {
                 matricula: '',
                 dni: '',
                 email: '',
-                telefono: ''
+                telefono: '',
+                password: '',
+                rol: 'medico',
+        especialidades_ids: []
             });
         }
         setModalOpen(true);
@@ -56,13 +84,47 @@ export default function MedicosPage({ showAlert }) {
     const handleSubmit = async (e) => {
         e.preventDefault();
         try {
+            const { especialidades_ids, ...medicoData } = formData;
+            let medicoId = editingId;
+
             if (editingId) {
-                await actualizarMedico(editingId, formData);
-                showAlert('Médico actualizado correctamente', 'success');
+                await actualizarMedico(editingId, medicoData);
             } else {
-                await crearMedico(formData);
-                showAlert('Médico creado correctamente', 'success');
+                const nuevoMedico = await crearMedico(medicoData);
+                medicoId = nuevoMedico.id_medico;
             }
+
+            // Gestionar especialidades
+            if (medicoId && especialidades_ids) {
+                // Obtener especialidades actuales
+                let especialidadesActuales = [];
+                try {
+                    const res = await axiosClient.get(`/medicos-especialidades/medico/${medicoId}`);
+                    especialidadesActuales = res.data.map(e => e.especialidad_id);
+                } catch (err) {
+                    // Si no hay especialidades, continuar
+                }
+
+                // Determinar cuáles agregar y cuáles eliminar
+                const agregar = especialidades_ids.filter(id => !especialidadesActuales.includes(id));
+                const eliminar = especialidadesActuales.filter(id => !especialidades_ids.includes(id));
+
+                // Agregar nuevas especialidades
+                for (const espId of agregar) {
+                    await axiosClient.post('/medicos-especialidades/', {
+                        medico_id: medicoId,
+                        especialidad_id: espId,
+                        principal: false
+                    });
+                }
+
+                // Eliminar especialidades no seleccionadas
+                for (const espId of eliminar) {
+                    await axiosClient.delete(`/medicos-especialidades/${medicoId}/${espId}`);
+                }
+            }
+
+            showAlert(`Médico ${editingId ? 'actualizado' : 'creado'} correctamente`, 'success');
             setModalOpen(false);
             cargarMedicos();
         } catch (err) {
@@ -99,7 +161,36 @@ export default function MedicosPage({ showAlert }) {
         { key: 'matricula', label: 'Matrícula' },
         { key: 'dni', label: 'DNI' },
         { key: 'email', label: 'Email' },
-        { key: 'telefono', label: 'Teléfono' }
+        { key: 'telefono', label: 'Teléfono' },
+        { 
+            key: 'especialidades', 
+            label: 'Especialidades',
+            render: (row) => {
+                if (!row.especialidades || row.especialidades.length === 0) {
+                    return <span style={{ color: '#999' }}>—</span>;
+                }
+                return (
+                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: '4px' }}>
+                        {row.especialidades.map((esp, idx) => (
+                            <span
+                                key={idx}
+                                style={{
+                                    backgroundColor: '#e7f3ff',
+                                    color: '#0066cc',
+                                    padding: '2px 8px',
+                                    borderRadius: '4px',
+                                    fontSize: '0.85rem',
+                                    fontWeight: '500',
+                                    whiteSpace: 'nowrap'
+                                }}
+                            >
+                                {esp}
+                            </span>
+                        ))}
+                    </div>
+                );
+            }
+        }
     ];
 
     return (
@@ -203,9 +294,52 @@ export default function MedicosPage({ showAlert }) {
                             />
                         </FormGroup>
                     </FormRow>
+                    <FormRow>
+                        <FormGroup label="Especialidades">
+                            <select
+                                multiple
+                                value={formData.especialidades_ids.map(String)}
+                                onChange={handleEspecialidadesChange}
+                                style={{ minHeight: '120px' }}
+                            >
+                                {especialidades.map(esp => (
+                                    <option key={esp.id_especialidad} value={esp.id_especialidad}>
+                                        {esp.nombre}
+                                    </option>
+                                ))}
+                            </select>
+                            <small style={{ color: '#666', marginTop: '4px', display: 'block' }}>
+                                Mantén Ctrl (Cmd en Mac) para seleccionar múltiples
+                            </small>
+                        </FormGroup>
+                    </FormRow>
+                    <FormRow>
+                        <FormGroup label={`Contraseña ${editingId ? '(dejar vacío para no cambiar)' : '*'}`}>
+                            <input
+                                type="password"
+                                name="password"
+                                value={formData.password}
+                                onChange={handleInputChange}
+                                required={!editingId}
+                                placeholder="Contraseña de acceso"
+                            />
+                        </FormGroup>
+                        <FormGroup label="Rol">
+                            <select
+                                name="rol"
+                                value={formData.rol}
+                                onChange={handleInputChange}
+                                required
+                            >
+                                <option value="medico">Médico</option>
+                                <option value="admin">Administrador</option>
+                            </select>
+                        </FormGroup>
+                    </FormRow>
                     <FormActions>
                         <Button 
                             variant="secondary" 
+                            type="button"
                             onClick={() => setModalOpen(false)}
                         >
                             Cancelar

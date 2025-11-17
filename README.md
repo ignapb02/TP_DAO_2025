@@ -7,3 +7,7 @@ Inicilializar backend:
 Inicializar frontend:
 1) npm install
 2) npm run dev
+
+Credenciales administrador:
+usuario: admin@sistema.com 
+contrasena: admin123

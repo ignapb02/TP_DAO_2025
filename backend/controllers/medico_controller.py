@@ -13,7 +13,9 @@ def crear_medico():
             data.get("matricula"),
             data.get("email"),
             data.get("dni"),
-            data.get("telefono")
+            data.get("telefono"),
+            data.get("password"),  # Opcional
+            data.get("rol", "medico")  # Por defecto 'medico'
         )
         return jsonify({"msg": "Médico creado", "medico": medico.to_dict()}), 201
     except ValueError as e:
@@ -53,6 +55,11 @@ def actualizar_medico(id_medico):
 def eliminar_medico(id_medico):
     try:
         MedicoService.eliminar_medico(id_medico)
-        return jsonify({"msg": "Médico eliminado"})
-    except Exception as e:
+        return jsonify({"msg": "Médico eliminado"}), 200
+    except ValueError as e:
         return jsonify({"error": str(e)}), 400
+    except Exception as e:
+        import traceback
+        print(f"Error al eliminar médico: {str(e)}")
+        print(traceback.format_exc())
+        return jsonify({"error": str(e)}), 500
