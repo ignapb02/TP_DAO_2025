@@ -1,5 +1,6 @@
 from backend.database.db import db
 from datetime import datetime
+from backend.models.validators import validate_required_int, validate_optional_str, parse_optional_datetime
 
 class Receta(db.Model):
     __tablename__ = "recetas"
@@ -13,10 +14,10 @@ class Receta(db.Model):
     historial = db.relationship("HistorialClinico", back_populates="receta")
 
     def __init__(self, historial_id, medicamentos=None, indicaciones=None, fecha_emision=None):
-        self.historial_id = historial_id
-        self.medicamentos = medicamentos
-        self.indicaciones = indicaciones
-        self.fecha_emision = fecha_emision or datetime.now()
+        self.historial_id = validate_required_int(historial_id, name='historial_id', min_value=1)
+        self.medicamentos = validate_optional_str(medicamentos, 'medicamentos', max_len=2000)
+        self.indicaciones = validate_optional_str(indicaciones, 'indicaciones', max_len=2000)
+        self.fecha_emision = parse_optional_datetime(fecha_emision, name='fecha_emision') or datetime.now()
 
     def to_dict(self):
         return {

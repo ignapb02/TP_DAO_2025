@@ -1,5 +1,6 @@
 from backend.database.db import db
 import bcrypt
+from backend.models.validators import validate_name, validate_digits, validate_email, validate_required_str
 
 class Medico(db.Model):
     __tablename__ = "medicos"
@@ -18,13 +19,13 @@ class Medico(db.Model):
     turnos = db.relationship("Turno", back_populates="medico", lazy=True)
 
     def __init__(self, nombre, apellido, matricula, email, dni, telefono=None, password=None, rol='medico'):
-        self.nombre = nombre
-        self.apellido = apellido
-        self.matricula = matricula
-        self.email = email
-        self.telefono = telefono
-        self.dni = dni
-        self.rol = rol
+        self.nombre = validate_name(nombre, 'nombre', max_len=100)
+        self.apellido = validate_name(apellido, 'apellido', max_len=100)
+        self.matricula = validate_required_str(matricula, 'matricula', max_len=50)
+        self.email = validate_email(email, name='email', max_len=100)
+        self.telefono = validate_digits(telefono, 'telefono', max_len=20) if telefono is not None else None
+        self.dni = validate_digits(dni, 'dni', min_len=6, max_len=10)
+        self.rol = validate_required_str(rol, 'rol', max_len=20)
         if password:
             self.set_password(password)
     

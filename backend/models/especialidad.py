@@ -1,4 +1,5 @@
 from backend.database.db import db
+from backend.models.validators import validate_name
 
 class Especialidad(db.Model):
     __tablename__ = "especialidades"
@@ -9,7 +10,7 @@ class Especialidad(db.Model):
     medicos = db.relationship("MedicoEspecialidad", back_populates="especialidad", cascade="all, delete")
 
     def __init__(self, nombre):
-        self.nombre = nombre
+        self.nombre = validate_name(nombre, 'nombre', max_len=100)
 
     def to_dict(self):
         return {

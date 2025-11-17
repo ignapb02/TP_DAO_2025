@@ -1,4 +1,5 @@
 from backend.database.db import db
+from backend.models.validators import validate_required_int, validate_optional_str, parse_optional_datetime
 
 class HistorialClinico(db.Model):
     __tablename__ = "historiales_clinicos"
@@ -16,12 +17,12 @@ class HistorialClinico(db.Model):
     receta = db.relationship("Receta", uselist=False, back_populates="historial")
 
     def __init__(self, paciente_id, turno_id, diagnostico=None, tratamiento=None, observaciones=None, fecha_atencion=None):
-        self.paciente_id = paciente_id
-        self.turno_id = turno_id
-        self.diagnostico = diagnostico
-        self.tratamiento = tratamiento
-        self.observaciones = observaciones
-        self.fecha_atencion = fecha_atencion
+        self.paciente_id = validate_required_int(paciente_id, name='paciente_id', min_value=1)
+        self.turno_id = validate_required_int(turno_id, name='turno_id', min_value=1)
+        self.diagnostico = validate_optional_str(diagnostico, 'diagnostico', max_len=2000)
+        self.tratamiento = validate_optional_str(tratamiento, 'tratamiento', max_len=2000)
+        self.observaciones = validate_optional_str(observaciones, 'observaciones', max_len=2000)
+        self.fecha_atencion = parse_optional_datetime(fecha_atencion, name='fecha_atencion')
 
     def to_dict(self):
         paciente_nombre = None
