@@ -28,6 +28,10 @@ class TurnoService:
             # Excluir el turno que se está editando
             if turno_id_excluir and turno.id_turno == turno_id_excluir:
                 continue
+
+            # Ignorar turnos cancelados al validar superposición
+            if getattr(turno, 'estado', None) == 'cancelado':
+                continue
             
             # Solo validar turnos en la misma fecha
             if turno.fecha != fecha:
@@ -58,6 +62,10 @@ class TurnoService:
 
         for turno in turnos_paciente:
             if turno_id_excluir and turno.id_turno == turno_id_excluir:
+                continue
+
+            # Ignorar turnos cancelados al validar superposición
+            if getattr(turno, 'estado', None) == 'cancelado':
                 continue
 
             if turno.fecha != fecha:
@@ -97,6 +105,15 @@ class TurnoService:
         
         if duracion_minutos > 480:  # Máximo 8 horas
             raise ValueError("La duración no puede exceder 480 minutos (8 horas).")
+
+        # Validar rango horario permitido: entre 08:00 y 20:00 (el turno debe finalizar a las 20:00 o antes)
+        hora_inicio_minutos = TurnoService.convertir_hora_a_minutos(hora)
+        hora_fin_minutos = hora_inicio_minutos + duracion_minutos
+        MIN_PERMITIDO = 8 * 60  # 08:00
+        MAX_FIN_PERMITIDO = 20 * 60  # 20:00
+
+        if hora_inicio_minutos < MIN_PERMITIDO or hora_fin_minutos > MAX_FIN_PERMITIDO:
+            raise ValueError("Los turnos solo se pueden crear entre las 08:00 y las 20:00 (el turno debe finalizar a las 20:00 o antes).")
 
         # Validar superposición
         # Verificar superposición para el médico

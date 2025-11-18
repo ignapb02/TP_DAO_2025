@@ -154,14 +154,40 @@ export default function TurnosPage() {
             throw new Error('La hora es obligatoria. Selecciona una hora válida (ej: 14:30)');
         }
         
-        const selectedDate = new Date(formData.fecha);
+        // Parsear la fecha usando componentes (evita problemas de zona horaria al usar new Date('YYYY-MM-DD'))
+        const [year, month, day] = formData.fecha.split('-').map(Number);
+        const selectedDate = new Date(year, month - 1, day);
         const today = new Date();
         today.setHours(0, 0, 0, 0);
-        
+
         if (selectedDate < today) {
             throw new Error('No se pueden crear turnos en fechas pasadas. Selecciona una fecha futura');
         }
-        
+
+        // Si la fecha es hoy, validar que la hora seleccionada sea posterior al momento actual
+        const now = new Date();
+        const isToday = selectedDate.getFullYear() === now.getFullYear() &&
+                        selectedDate.getMonth() === now.getMonth() &&
+                        selectedDate.getDate() === now.getDate();
+
+        if (isToday) {
+            const [h, m] = formData.hora.split(':').map(Number);
+            const selectedDateTime = new Date(year, month - 1, day, h, m);
+            if (selectedDateTime <= now) {
+                throw new Error('No se pueden crear turnos en horarios pasados. Selecciona una hora futura para hoy');
+            }
+        }
+        // Validar rango horario permitido: entre 08:00 y 20:00 (el turno debe finalizar a las 20:00 o antes)
+        const [horaNum, minNum] = formData.hora.split(':').map(Number);
+        const inicioMinutos = horaNum * 60 + minNum;
+        const finMinutos = inicioMinutos + (formData.duracion_minutos || 0);
+        const MIN_PERMITIDO = 8 * 60; // 08:00
+        const MAX_FIN_PERMITIDO = 20 * 60; // 20:00
+
+        if (inicioMinutos < MIN_PERMITIDO || finMinutos > MAX_FIN_PERMITIDO) {
+            throw new Error('Los turnos solo se pueden crear entre las 08:00 y las 20:00 (el turno debe finalizar antes o a las 20:00)');
+        }
+
         if (formData.duracion_minutos < 15 || formData.duracion_minutos > 480) {
             throw new Error('La duración debe estar entre 15 minutos y 8 horas (480 minutos)');
         }
