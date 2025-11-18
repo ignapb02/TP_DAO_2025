@@ -10,7 +10,7 @@ import { useMedicos } from '../hooks/useMedicos';
 import { usePacientes } from '../hooks/usePacientes';
 import { useEspecialidades } from '../hooks/useEspecialidades';
 
-export default function TurnosPage() {
+export default function TurnosPage({ showAlert }) {
     // Todos los hooks primero
     const { turnos, loading, crearTurno, cargarTurnos, cambiarEstadoTurno } = useTurnos();
     const { medicos } = useMedicos();
@@ -274,8 +274,14 @@ export default function TurnosPage() {
             setSuccess('✅ Estado del turno actualizado correctamente');
             setTimeout(() => setSuccess(''), 3000);
         } catch (err) {
-            setError('❌ Error al cambiar el estado del turno');
-            setTimeout(() => setError(''), 3000);
+            // Preferir mensaje específico del servidor (la hook lanza Error(serverMsg))
+            const serverMsg = err?.message || err?.response?.data?.error || 'Error al cambiar el estado del turno';
+            if (typeof showAlert === 'function') {
+                showAlert(serverMsg, 'danger');
+            } else {
+                setError(`❌ ${serverMsg}`);
+                setTimeout(() => setError(''), 3000);
+            }
         } finally {
             setEstadoChanging(null);
         }

@@ -35,7 +35,12 @@ export function useTurnos() {
             await axiosClient.put(`/turnos/${id}/estado`, { estado });
             setTurnos(turnos.map(t => t.id_turno === id ? { ...t, estado } : t));
         } catch (err) {
-            throw new Error("Error al cambiar estado del turno");
+            // Propagar mensaje de error del servidor si existe, para que el frontend lo muestre
+            const serverMsg = err?.response?.data?.error || err?.response?.data?.message;
+            if (serverMsg) {
+                throw new Error(serverMsg);
+            }
+            throw new Error(err.message || "Error al cambiar estado del turno");
         }
     };
 

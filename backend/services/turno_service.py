@@ -131,7 +131,17 @@ class TurnoService:
         turno = TurnoRepository.obtener_por_id(id_turno)
         if not turno:
             raise ValueError("Turno inexistente.")
-        
+        # Si se intenta marcar como completado, verificar que la fecha/hora ya haya ocurrido
+        if nuevo_estado == "completado":
+            try:
+                # Se espera que `turno.fecha` sea una cadena ISO (YYYY-MM-DD) y `turno.hora` HH:MM
+                scheduled_dt = datetime.fromisoformat(f"{turno.fecha}T{turno.hora}")
+            except Exception:
+                raise ValueError("Formato de fecha/hora del turno inválido.")
+
+            if datetime.now() < scheduled_dt:
+                raise ValueError("No se puede marcar como completado antes de la fecha/hora programada.")
+
         turno.estado = nuevo_estado
         updated = TurnoRepository.actualizar(id_turno, estado=nuevo_estado)
         return updated
