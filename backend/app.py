@@ -3,12 +3,17 @@ from flask_sqlalchemy import SQLAlchemy
 from flask_cors import CORS
 from backend.config import Config
 from backend.database.db import db
+from backend.services.email_service import EmailService
 import subprocess
 import sys
 import os
 import atexit
 from pathlib import Path
 import socket
+from dotenv import load_dotenv
+
+# Cargar variables de entorno
+load_dotenv()
 
 def create_app():
     app = Flask(__name__)
@@ -16,6 +21,9 @@ def create_app():
 
     # Inicializar DB en la app
     db.init_app(app)
+    
+    # Inicializar EmailService
+    EmailService.init_mail(app)
 
     # Habilitar CORS - Permitir peticiones desde el frontend
     # Aceptar requests desde los orígenes habituales del frontend (incluye Vite en 5173)

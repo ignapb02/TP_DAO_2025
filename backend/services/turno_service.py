@@ -122,9 +122,19 @@ class TurnoService:
         TurnoService.validar_superposicion_paciente(paciente_id, fecha, hora, duracion_minutos)
 
         # Crear turno
-        return TurnoRepository.crear(
+        turno = TurnoRepository.crear(
             paciente_id, medico_id, especialidad_id, fecha, hora, duracion_minutos
         )
+        
+        # Crear recordatorio automático
+        try:
+            from backend.services.recordatorio_service import RecordatorioService
+            RecordatorioService.crear_recordatorio_automatico_para_turno(turno.id_turno, 24)
+            print(f"✅ Recordatorio automático creado para turno {turno.id_turno}")
+        except Exception as e:
+            print(f"⚠️ No se pudo crear recordatorio automático para turno {turno.id_turno}: {str(e)}")
+        
+        return turno
 
     @staticmethod
     def cambiar_estado(id_turno, nuevo_estado):
@@ -161,6 +171,90 @@ class TurnoService:
     @staticmethod
     def obtener_todos_turnos():
         return TurnoRepository.obtener_todos()
+    
+    @staticmethod
+    def obtener_turno(id_turno):
+        """Obtener un turno por ID"""
+        turno = TurnoRepository.obtener_por_id(id_turno)
+        if not turno:
+            raise ValueError("Turno no encontrado")
+        return turno
+    
+    @staticmethod
+    def actualizar_turno(id_turno, paciente_id, medico_id, especialidad_id, fecha, hora, duracion_minutos=30):
+        """Actualizar un turno existente con validaciones"""
+        from backend.repositories.paciente_repository import PacienteRepository
+        from backend.repositories.medico_repository import MedicoRepository
+        from backend.repositories.medico_especialidad_repository import MedicoEspecialidadRepository
+        
+        # Verificar que el turno existe
+        turno = TurnoRepository.obtener_por_id(id_turno)
+        if not turno:
+            raise ValueError("Turno no encontrado")
+        
+        # Validar existencia de entidades relacionadas
+        if paciente_id:
+            paciente = PacienteRepository.obtener_por_id(paciente_id)
+            if not paciente:
+                raise ValueError("Paciente inexistente")
+        
+        if medico_id:
+            medico = MedicoRepository.obtener_por_id(medico_id)
+            if not medico:
+                raise ValueError("Médico inexistente")
+        
+        # Validar especialidad del médico
+        if medico_id and especialidad_id:
+            if not MedicoEspecialidadRepository.obtener(medico_id, especialidad_id):
+                raise ValueError("El médico no posee esa especialidad")
+        
+        # Validar duración
+        if duracion_minutos is not None:
+            if not isinstance(duracion_minutos, int) or duracion_minutos <= 0:
+                raise ValueError("La duración debe ser un número positivo en minutos")
+            if duracion_minutos > 480:
+                raise ValueError("La duración no puede exceder 480 minutos (8 horas)")
+        
+        # Validar rango horario si se actualiza la hora
+        if hora is not None:
+            hora_inicio_minutos = TurnoService.convertir_hora_a_minutos(hora)
+            hora_fin_minutos = hora_inicio_minutos + (duracion_minutos or turno.duracion_minutos)
+            MIN_PERMITIDO = 8 * 60  # 08:00
+            MAX_FIN_PERMITIDO = 20 * 60  # 20:00
+            
+            if hora_inicio_minutos < MIN_PERMITIDO or hora_fin_minutos > MAX_FIN_PERMITIDO:
+                raise ValueError("Los turnos solo se pueden programar entre las 08:00 y las 20:00")
+        
+        # Validar superposiciones si se cambian datos clave
+        if any([medico_id, fecha, hora, duracion_minutos]):
+            nuevo_medico_id = medico_id or turno.medico_id
+            nueva_fecha = fecha or turno.fecha
+            nueva_hora = hora or turno.hora
+            nueva_duracion = duracion_minutos or turno.duracion_minutos
+            
+            # Verificar superposición para el médico (excluyendo el turno actual)
+            TurnoService.validar_superposicion(nuevo_medico_id, nueva_fecha, nueva_hora, nueva_duracion, id_turno)
+            
+            # Verificar superposición para el paciente (excluyendo el turno actual)
+            nuevo_paciente_id = paciente_id or turno.paciente_id
+            TurnoService.validar_superposicion_paciente(nuevo_paciente_id, nueva_fecha, nueva_hora, nueva_duracion, id_turno)
+        
+        # Actualizar campos
+        campos_actualizar = {}
+        if paciente_id is not None:
+            campos_actualizar['paciente_id'] = paciente_id
+        if medico_id is not None:
+            campos_actualizar['medico_id'] = medico_id
+        if especialidad_id is not None:
+            campos_actualizar['especialidad_id'] = especialidad_id
+        if fecha is not None:
+            campos_actualizar['fecha'] = fecha
+        if hora is not None:
+            campos_actualizar['hora'] = hora
+        if duracion_minutos is not None:
+            campos_actualizar['duracion_minutos'] = duracion_minutos
+        
+        return TurnoRepository.actualizar(id_turno, **campos_actualizar)
     
     @staticmethod
     def atender_turno(id_turno, diagnostico, tratamiento, observaciones):

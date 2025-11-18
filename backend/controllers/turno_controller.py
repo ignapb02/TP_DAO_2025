@@ -53,6 +53,39 @@ def cambiar_estado(id_turno):
         return jsonify({"error": f"Error: {str(e)}"}), 500
 
 
+@turno_bp.put("/<int:id_turno>")
+def actualizar_turno(id_turno):
+    """Actualizar datos completos de un turno"""
+    data = request.json
+    try:
+        turno = TurnoService.actualizar_turno(
+            id_turno,
+            data.get("paciente_id"),
+            data.get("medico_id"),
+            data.get("especialidad_id"),
+            data.get("fecha"),
+            data.get("hora"),
+            data.get("duracion_minutos", 30)
+        )
+        return jsonify({"msg": "Turno actualizado correctamente", "turno": turno.to_dict()}), 200
+    except ValueError as e:
+        return jsonify({"error": str(e)}), 400
+    except Exception as e:
+        return jsonify({"error": f"Error al actualizar turno: {str(e)}"}), 500
+
+
+@turno_bp.get("/<int:id_turno>")
+def obtener_turno(id_turno):
+    """Obtener un turno específico por ID"""
+    try:
+        turno = TurnoService.obtener_turno(id_turno)
+        return jsonify(turno.to_dict()), 200
+    except ValueError as e:
+        return jsonify({"error": str(e)}), 404
+    except Exception as e:
+        return jsonify({"error": f"Error: {str(e)}"}), 500
+
+
 @turno_bp.get("/medico/<int:id_medico>")
 def turnos_medico(id_medico):
     try:

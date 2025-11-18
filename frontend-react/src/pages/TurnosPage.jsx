@@ -5,6 +5,7 @@ import Modal from '../components/Modal';
 import Button from '../components/Button';
 import Form, { FormGroup, FormRow, FormActions } from '../components/Form';
 import Alert from '../components/Alert';
+import axiosClient from '../api/axiosClient';
 import { useTurnos } from '../hooks/useTurnos';
 import { useMedicos } from '../hooks/useMedicos';
 import { usePacientes } from '../hooks/usePacientes';
@@ -18,6 +19,8 @@ export default function TurnosPage({ showAlert }) {
     const { especialidades } = useEspecialidades();
     
     const [isModalOpen, setIsModalOpen] = useState(false);
+    const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+    const [editingTurno, setEditingTurno] = useState(null);
     const [formData, setFormData] = useState({
         paciente_id: '',
         medico_id: '',
@@ -29,6 +32,7 @@ export default function TurnosPage({ showAlert }) {
     const [error, setError] = useState('');
     const [success, setSuccess] = useState('');
     const [isSubmitting, setIsSubmitting] = useState(false);
+    const [procesandoRecordatorios, setProcesandoRecordatorios] = useState(false);
     const [estadoChanging, setEstadoChanging] = useState(null);
     const [filtros, setFiltros] = useState({
         medico_id: '',
@@ -100,8 +104,30 @@ export default function TurnosPage({ showAlert }) {
         setIsModalOpen(true);
     };
 
+    const handleOpenEditModal = (turno) => {
+        setEditingTurno(turno);
+        setFormData({
+            paciente_id: turno.paciente_id,
+            medico_id: turno.medico_id,
+            especialidad_id: turno.especialidad_id,
+            fecha: turno.fecha,
+            hora: turno.hora,
+            duracion_minutos: turno.duracion_minutos
+        });
+        setError('');
+        setSuccess('');
+        setIsEditModalOpen(true);
+    };
+
     const handleCloseModal = () => {
         setIsModalOpen(false);
+        setError('');
+        setSuccess('');
+    };
+
+    const handleCloseEditModal = () => {
+        setIsEditModalOpen(false);
+        setEditingTurno(null);
         setError('');
         setSuccess('');
     };
@@ -225,6 +251,37 @@ export default function TurnosPage({ showAlert }) {
         }
     };
 
+    const handleEditSubmit = async (e) => {
+        e.preventDefault();
+        setError('');
+        setSuccess('');
+        setIsSubmitting(true);
+
+        try {
+            validateFormData();
+
+            await axiosClient.put(`/turnos/${editingTurno.id_turno}`, {
+                paciente_id: parseInt(formData.paciente_id),
+                medico_id: parseInt(formData.medico_id),
+                especialidad_id: parseInt(formData.especialidad_id),
+                fecha: formData.fecha,
+                hora: formData.hora,
+                duracion_minutos: formData.duracion_minutos
+            });
+
+            setSuccess('✅ Turno actualizado correctamente');
+            setTimeout(() => {
+                handleCloseEditModal();
+                cargarTurnos();
+            }, 1500);
+        } catch (err) {
+            const detailedError = getDetailedErrorMessage(err);
+            setError(detailedError);
+        } finally {
+            setIsSubmitting(false);
+        }
+    };
+
     const handleFiltroChange = (e) => {
         const { name, value } = e.target;
         setFiltros(prev => ({
@@ -284,6 +341,40 @@ export default function TurnosPage({ showAlert }) {
             }
         } finally {
             setEstadoChanging(null);
+        }
+    };
+
+    const procesarRecordatorios = async () => {
+        setProcesandoRecordatorios(true);
+        try {
+            const response = await axiosClient.post('/recordatorios/procesar');
+            const resultado = response.data.resultado;
+            
+            if (resultado.enviados > 0) {
+                showAlert && showAlert(
+                    `✅ ${resultado.enviados} recordatorios enviados exitosamente`,
+                    'success'
+                );
+            } else if (resultado.procesados === 0) {
+                showAlert && showAlert(
+                    'ℹ️ No hay recordatorios pendientes para enviar',
+                    'info'
+                );
+            } else {
+                showAlert && showAlert(
+                    `⚠️ ${resultado.procesados} recordatorios procesados, ${resultado.errores} errores`,
+                    'warning'
+                );
+            }
+            
+        } catch (error) {
+            console.error('Error procesando recordatorios:', error);
+            showAlert && showAlert(
+                'Error al procesar recordatorios: ' + (error.response?.data?.error || error.message),
+                'danger'
+            );
+        } finally {
+            setProcesandoRecordatorios(false);
         }
     };
 
@@ -374,6 +465,20 @@ export default function TurnosPage({ showAlert }) {
                     >
                         ✕
                     </Button>
+                    <Button
+                        onClick={() => handleOpenEditModal(row)}
+                        style={{
+                            padding: '6px 12px',
+                            fontSize: '0.85rem',
+                            backgroundColor: '#007bff',
+                            color: '#fff',
+                            border: 'none',
+                            borderRadius: '4px',
+                            cursor: 'pointer'
+                        }}
+                    >
+                        ✏️
+                    </Button>
                 </>
             )}
             {(row.estado === 'cancelado' || row.estado === 'completado') && (
@@ -386,9 +491,23 @@ export default function TurnosPage({ showAlert }) {
         <div>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
                 <h2>Gestión de Turnos</h2>
-                <Button onClick={handleOpenModal} className="btn-primary">
-                    + Nuevo Turno
-                </Button>
+                <div style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
+                    <Button 
+                        variant="secondary"
+                        onClick={procesarRecordatorios}
+                        disabled={procesandoRecordatorios}
+                        size="small"
+                    >
+                        {procesandoRecordatorios ? (
+                            <>⏳ Enviando...</>
+                        ) : (
+                            <>📧 Enviar Recordatorios</>
+                        )}
+                    </Button>
+                    <Button onClick={handleOpenModal} className="btn-primary">
+                        + Nuevo Turno
+                    </Button>
+                </div>
             </div>
 
             <div style={{
@@ -592,6 +711,126 @@ export default function TurnosPage({ showAlert }) {
                             disabled={isSubmitting}
                         >
                             {isSubmitting ? 'Creando...' : 'Crear Turno'}
+                        </Button>
+                    </FormActions>
+                </Form>
+            </Modal>
+
+            <Modal id="modal-editar-turno" isOpen={isEditModalOpen} onClose={handleCloseEditModal} title="Editar Turno" maxWidth="600px">
+                {error && <Alert type="error" message={error} />}
+                {success && <Alert type="success" message={success} />}
+
+                <Form onSubmit={handleEditSubmit}>
+                    <FormRow>
+                        <FormGroup label="Paciente" style={{ flex: 1 }}>
+                            <select
+                                name="paciente_id"
+                                value={formData.paciente_id}
+                                onChange={handleInputChange}
+                                required
+                                style={{ width: '100%', padding: '8px', borderRadius: '4px', border: '1px solid #ddd' }}
+                            >
+                                <option value="">Selecciona un paciente</option>
+                                {pacientes.map(p => (
+                                    <option key={p.id_paciente} value={p.id_paciente}>
+                                        {p.nombre} {p.apellido}
+                                    </option>
+                                ))}
+                            </select>
+                        </FormGroup>
+
+                        <FormGroup label="Médico" style={{ flex: 1 }}>
+                            <select
+                                name="medico_id"
+                                value={formData.medico_id}
+                                onChange={handleInputChange}
+                                required
+                                style={{ width: '100%', padding: '8px', borderRadius: '4px', border: '1px solid #ddd' }}
+                            >
+                                <option value="">Selecciona un médico</option>
+                                {medicos.map(m => (
+                                    <option key={m.id_medico} value={m.id_medico}>
+                                        {m.nombre} {m.apellido}
+                                    </option>
+                                ))}
+                            </select>
+                        </FormGroup>
+                    </FormRow>
+
+                    <FormGroup label="Especialidad">
+                        <select
+                            name="especialidad_id"
+                            value={formData.especialidad_id}
+                            onChange={handleInputChange}
+                            required
+                            style={{ width: '100%', padding: '8px', borderRadius: '4px', border: '1px solid #ddd' }}
+                        >
+                            <option value="">Selecciona una especialidad</option>
+                            {especialidades.map(e => (
+                                <option key={e.id_especialidad} value={e.id_especialidad}>
+                                    {e.nombre}
+                                </option>
+                            ))}
+                        </select>
+                    </FormGroup>
+
+                    <FormRow>
+                        <FormGroup label="Fecha" style={{ flex: 1 }}>
+                            <input
+                                type="date"
+                                name="fecha"
+                                value={formData.fecha}
+                                onChange={handleInputChange}
+                                required
+                                min={new Date().toISOString().split('T')[0]}
+                                style={{ width: '100%', padding: '8px', borderRadius: '4px', border: '1px solid #ddd' }}
+                            />
+                        </FormGroup>
+
+                        <FormGroup label="Hora" style={{ flex: 1 }}>
+                            <input
+                                type="time"
+                                name="hora"
+                                value={formData.hora}
+                                onChange={handleInputChange}
+                                required
+                                style={{ width: '100%', padding: '8px', borderRadius: '4px', border: '1px solid #ddd' }}
+                            />
+                        </FormGroup>
+                    </FormRow>
+
+                    <FormGroup label="Duración (minutos)">
+                        <input
+                            type="number"
+                            name="duracion_minutos"
+                            value={formData.duracion_minutos}
+                            onChange={handleInputChange}
+                            required
+                            min="15"
+                            max="480"
+                            step="15"
+                            style={{ width: '100%', padding: '8px', borderRadius: '4px', border: '1px solid #ddd' }}
+                        />
+                        <small style={{ color: '#666', fontSize: '0.85rem', marginTop: '4px', display: 'block' }}>
+                            Mínimo 15 minutos, máximo 8 horas (480 minutos)
+                        </small>
+                    </FormGroup>
+
+                    <FormActions>
+                        <Button
+                            type="button"
+                            onClick={handleCloseEditModal}
+                            className="btn-secondary"
+                            disabled={isSubmitting}
+                        >
+                            Cancelar
+                        </Button>
+                        <Button
+                            type="submit"
+                            className="btn-primary"
+                            disabled={isSubmitting}
+                        >
+                            {isSubmitting ? 'Actualizando...' : 'Actualizar Turno'}
                         </Button>
                     </FormActions>
                 </Form>

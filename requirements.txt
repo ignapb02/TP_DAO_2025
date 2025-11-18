@@ -3,3 +3,5 @@ flask_sqlalchemy
 flask_cors
 bcrypt
 pyjwt
+flask-mail
+python-dotenv
