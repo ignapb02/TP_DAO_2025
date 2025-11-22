@@ -37,7 +37,26 @@ class EspecialidadService:
     
     @staticmethod
     def eliminar_especialidad(id_especialidad):
+        from backend.repositories.medico_especialidad_repository import MedicoEspecialidadRepository
+        from backend.repositories.turno_repository import TurnoRepository
+        
         especialidad = EspecialidadRepository.obtener_por_id(id_especialidad)
         if not especialidad:
             return False
+        
+        # Verificar si hay médicos con esta especialidad
+        medicos_especialidades = MedicoEspecialidadRepository.obtener_por_especialidad(id_especialidad)
+        if medicos_especialidades:
+            raise ValueError(f"No se puede eliminar la especialidad porque hay {len(medicos_especialidades)} médico(s) con esta especialidad asignada.")
+        
+        # Verificar si hay turnos con esta especialidad
+        todos_turnos = TurnoRepository.obtener_todos()
+        turnos_especialidad = [t for t in todos_turnos if t.especialidad_id == id_especialidad]
+        if turnos_especialidad:
+            turnos_pendientes = [t for t in turnos_especialidad if t.estado == 'pendiente']
+            if turnos_pendientes:
+                raise ValueError(f"No se puede eliminar la especialidad porque tiene {len(turnos_pendientes)} turno(s) pendiente(s) asociado(s).")
+            else:
+                raise ValueError(f"No se puede eliminar la especialidad porque tiene {len(turnos_especialidad)} turno(s) histórico(s) asociado(s).")
+        
         return EspecialidadRepository.eliminar(id_especialidad)

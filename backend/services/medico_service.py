@@ -103,6 +103,17 @@ class MedicoService:
 
     @staticmethod
     def eliminar_medico(id_medico):
+        from backend.repositories.turno_repository import TurnoRepository
+        
+        # Verificar si el médico tiene turnos asignados
+        turnos = TurnoRepository.obtener_por_medico(id_medico)
+        if turnos:
+            turnos_pendientes = [t for t in turnos if t.estado == 'pendiente']
+            if turnos_pendientes:
+                raise ValueError(f"No se puede eliminar el médico porque tiene {len(turnos_pendientes)} turno(s) pendiente(s) asignado(s).")
+            else:
+                raise ValueError(f"No se puede eliminar el médico porque tiene {len(turnos)} turno(s) histórico(s) asociado(s).")
+        
         try:
             ok = MedicoRepository.eliminar(id_medico)
             if not ok:

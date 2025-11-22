@@ -22,6 +22,10 @@ class MedicoEspecialidadRepository:
         return MedicoEspecialidad.query.filter_by(medico_id=medico_id).all()
 
     @staticmethod
+    def obtener_por_especialidad(especialidad_id):
+        return MedicoEspecialidad.query.filter_by(especialidad_id=especialidad_id).all()
+
+    @staticmethod
     def eliminar(medico_id, especialidad_id):
         relacion = MedicoEspecialidadRepository.obtener(medico_id, especialidad_id)
         if not relacion:

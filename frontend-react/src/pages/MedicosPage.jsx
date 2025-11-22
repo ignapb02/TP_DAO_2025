@@ -22,7 +22,6 @@ export default function MedicosPage({ showAlert }) {
         email: '',
         telefono: '',
         password: '',
-        rol: 'medico',
         especialidades_ids: []
     });
 
@@ -61,7 +60,6 @@ export default function MedicosPage({ showAlert }) {
                 email: medico.email,
                 telefono: medico.telefono || '',
                 password: '',  // No pre-llenar password al editar
-                rol: medico.rol || 'medico',
                 especialidades_ids: especialidadesActuales
             });
         } else {
@@ -74,8 +72,7 @@ export default function MedicosPage({ showAlert }) {
                 email: '',
                 telefono: '',
                 password: '',
-                rol: 'medico',
-        especialidades_ids: []
+                especialidades_ids: []
             });
         }
         setModalOpen(true);
@@ -85,6 +82,8 @@ export default function MedicosPage({ showAlert }) {
         e.preventDefault();
         try {
             const { especialidades_ids, ...medicoData } = formData;
+            // Agregar rol 'medico' por defecto
+            medicoData.rol = 'medico';
             let medicoId = editingId;
 
             if (editingId) {
@@ -193,6 +192,8 @@ export default function MedicosPage({ showAlert }) {
         }
     ];
 
+    const medicosSoloMedicos = medicos.filter(medico => medico.rol !== 'admin');
+
     return (
         <>
             <Card>
@@ -204,7 +205,7 @@ export default function MedicosPage({ showAlert }) {
                 </CardHeader>
                 <CardBody>
                     <Table
-                        data={medicos}
+                        data={medicosSoloMedicos}
                         columns={columns}
                         actions={(row) => (
                             <>
@@ -323,17 +324,6 @@ export default function MedicosPage({ showAlert }) {
                                 required={!editingId}
                                 placeholder="Contraseña de acceso"
                             />
-                        </FormGroup>
-                        <FormGroup label="Rol">
-                            <select
-                                name="rol"
-                                value={formData.rol}
-                                onChange={handleInputChange}
-                                required
-                            >
-                                <option value="medico">Médico</option>
-                                <option value="admin">Administrador</option>
-                            </select>
                         </FormGroup>
                     </FormRow>
                     <FormActions>

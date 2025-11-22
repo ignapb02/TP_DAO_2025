@@ -47,7 +47,8 @@ export function useMedicos() {
             await axiosClient.delete(`/medicos/${id}`);
             setMedicos(medicos.filter(m => m.id_medico !== id));
         } catch (err) {
-            throw new Error("Error al eliminar médico");
+            const msg = err?.response?.data?.error || err.message || "Error al eliminar médico";
+            throw new Error(msg);
         }
     };
 
