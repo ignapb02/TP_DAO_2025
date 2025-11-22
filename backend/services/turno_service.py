@@ -134,6 +134,22 @@ class TurnoService:
         except Exception as e:
             print(f"⚠️ No se pudo crear recordatorio automático para turno {turno.id_turno}: {str(e)}")
         
+        # Enviar email de confirmación al paciente
+        try:
+            from backend.services.email_service import EmailService
+            from backend.repositories.especialidad_repository import EspecialidadRepository
+            
+            # Obtener datos completos
+            paciente_obj = PacienteRepository.obtener_por_id(paciente_id)
+            medico_obj = MedicoRepository.obtener_por_id(medico_id)
+            especialidad_obj = EspecialidadRepository.obtener_por_id(especialidad_id)
+            
+            EmailService.enviar_confirmacion_turno(turno, paciente_obj, medico_obj, especialidad_obj)
+            print(f"✅ Email de confirmación enviado a {paciente_obj.email}")
+        except Exception as e:
+            print(f"⚠️ No se pudo enviar email de confirmación: {str(e)}")
+            # No fallar la creación si el email falla
+        
         return turno
 
     @staticmethod

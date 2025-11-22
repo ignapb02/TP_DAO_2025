@@ -134,6 +134,100 @@ class EmailService:
     
     
     @classmethod
+    def enviar_confirmacion_turno(cls, turno, paciente, medico, especialidad):
+        """Enviar email de confirmación de turno creado"""
+        if not cls._mail:
+            print("⚠️ EmailService no inicializado - simulating email send")
+            return cls._simulate_confirmacion_email(turno, paciente, medico, especialidad)
+        
+        if not paciente.email:
+            raise ValueError(f"El paciente {paciente.nombre} {paciente.apellido} no tiene email registrado")
+        
+        try:
+            subject = f"Confirmación de Turno - {turno.fecha} {turno.hora}"
+            
+            # Plantilla HTML del email
+            html_body = f"""
+            <html>
+            <body style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+                <div style="background-color: #f8f9fa; padding: 20px; border-radius: 8px;">
+                    <h2 style="color: #28a745; text-align: center;">✅ Turno Confirmado</h2>
+                    
+                    <div style="background-color: white; padding: 20px; border-radius: 8px; margin: 20px 0;">
+                        <p>Estimado/a <strong>{paciente.nombre} {paciente.apellido}</strong>,</p>
+                        
+                        <p>Su turno ha sido agendado exitosamente:</p>
+                        
+                        <div style="border-left: 4px solid #28a745; padding-left: 20px; margin: 20px 0; background-color: #f0f9f4; padding: 15px; border-radius: 6px;">
+                            <p><strong>📅 Fecha:</strong> {turno.fecha}</p>
+                            <p><strong>⏰ Hora:</strong> {turno.hora}</p>
+                            <p><strong>🩺 Médico:</strong> Dr./Dra. {medico.nombre} {medico.apellido}</p>
+                            <p><strong>📚 Especialidad:</strong> {especialidad.nombre}</p>
+                            <p><strong>⏱️ Duración:</strong> {turno.duracion_minutos} minutos</p>
+                            <p><strong>🔢 Número de Turno:</strong> #{turno.id_turno}</p>
+                        </div>
+                        
+                        <div style="background-color: #fff3cd; padding: 15px; border-radius: 6px; margin: 20px 0; border-left: 4px solid #ffc107;">
+                            <p style="margin: 0;"><strong>💡 Importante:</strong></p>
+                            <ul style="margin: 10px 0; padding-left: 20px;">
+                                <li>Llegar 10 minutos antes de la cita</li>
+                                <li>Traer DNI y credencial de obra social</li>
+                                <li>Si no puede asistir, cancele con anticipación</li>
+                                <li>Recibirá un recordatorio 24 horas antes</li>
+                            </ul>
+                        </div>
+                        
+                        <p>Para cualquier consulta, no dude en contactarnos.</p>
+                        
+                        <p>Saludos cordiales,<br>
+                        <strong>Turnero Médico</strong></p>
+                    </div>
+                </div>
+            </body>
+            </html>
+            """
+            
+            # Versión texto plano
+            text_body = f"""
+            Confirmación de Turno Médico
+            
+            Estimado/a {paciente.nombre} {paciente.apellido},
+            
+            Su turno ha sido agendado exitosamente:
+            
+            Fecha: {turno.fecha}
+            Hora: {turno.hora}
+            Médico: Dr./Dra. {medico.nombre} {medico.apellido}
+            Especialidad: {especialidad.nombre}
+            Duración: {turno.duracion_minutos} minutos
+            Número de Turno: #{turno.id_turno}
+            
+            Importante:
+            - Llegar 10 minutos antes de la cita
+            - Traer DNI y credencial de obra social
+            - Si no puede asistir, cancele con anticipación
+            - Recibirá un recordatorio 24 horas antes
+            
+            Saludos cordiales,
+            Turnero Médico
+            """
+            
+            msg = Message(
+                subject=subject,
+                recipients=[paciente.email],
+                html=html_body,
+                body=text_body
+            )
+            
+            cls._mail.send(msg)
+            print(f"✅ Email de confirmación enviado a {paciente.email} para turno {turno.id_turno}")
+            return True
+            
+        except Exception as e:
+            print(f"❌ Error enviando email de confirmación a {paciente.email}: {str(e)}")
+            raise e
+        
+    @classmethod
     def enviar_credenciales_medico(cls, medico, password):
         """Enviar email con credenciales de acceso al médico"""
         if not cls._mail:
