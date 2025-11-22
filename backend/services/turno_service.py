@@ -291,3 +291,22 @@ class TurnoService:
             "historial": historial.to_dict(),
             "turno": turno.to_dict()
         }
+    
+    @staticmethod
+    def obtener_turnos_pendientes_hoy():
+        """Obtener todos los turnos pendientes para hoy"""
+        from datetime import date
+        
+        todos_turnos = TurnoRepository.obtener_todos()
+        fecha_hoy = date.today().isoformat()
+        
+        # Filtrar turnos de hoy con estado pendiente
+        turnos_hoy = [
+            turno for turno in todos_turnos
+            if turno.fecha == fecha_hoy and turno.estado == "pendiente"
+        ]
+        
+        # Ordenar por hora
+        turnos_hoy.sort(key=lambda t: t.hora)
+        
+        return turnos_hoy

@@ -18,8 +18,26 @@ export default function Dashboard({ showAlert }) {
     const { historiales, loading: loadingHist } = useHistoriales();
     
     const [procesandoRecordatorios, setProcesandoRecordatorios] = useState(false);
+    const [turnosHoy, setTurnosHoy] = useState([]);
+    const [loadingTurnos, setLoadingTurnos] = useState(true);
 
     const loading = loadingPac || loadingMed || loadingEsp || loadingHist;
+
+    useEffect(() => {
+        const fetchTurnosHoy = async () => {
+            try {
+                setLoadingTurnos(true);
+                const response = await axiosClient.get('/turnos/hoy/pendientes');
+                setTurnosHoy(response.data);
+            } catch (error) {
+                console.error('Error al cargar turnos de hoy:', error);
+            } finally {
+                setLoadingTurnos(false);
+            }
+        };
+
+        fetchTurnosHoy();
+    }, []);
 
     const procesarRecordatorios = async () => {
         setProcesandoRecordatorios(true);
@@ -122,21 +140,60 @@ export default function Dashboard({ showAlert }) {
                 </CardBody>
             </Card>
 
-            {/* Últimos Pacientes */}
+            {/* Turnos Pendientes Hoy */}
             <Card>
                 <CardHeader>
-                    <h3>Últimos Pacientes</h3>
+                    <h3>📅 Turnos Pendientes Hoy</h3>
                 </CardHeader>
                 <CardBody>
-                    <Table
-                        data={pacientes.slice(0, 5)}
-                        columns={[
-                            { key: 'nombre', label: 'Nombre' },
-                            { key: 'apellido', label: 'Apellido' },
-                            { key: 'dni', label: 'DNI' },
-                            { key: 'email', label: 'Email' }
-                        ]}
-                    />
+                    {loadingTurnos ? (
+                        <div style={{ textAlign: 'center', padding: '20px' }}>
+                            <Loader />
+                        </div>
+                    ) : turnosHoy.length === 0 ? (
+                        <div style={{ textAlign: 'center', padding: '20px', color: '#666' }}>
+                            No hay turnos pendientes para hoy
+                        </div>
+                    ) : (
+                        <Table
+                            data={turnosHoy}
+                            columns={[
+                                { 
+                                    key: 'hora', 
+                                    label: 'Hora',
+                                    render: (turno) => (
+                                        <span style={{ fontWeight: 'bold' }}>
+                                            {turno.hora}
+                                        </span>
+                                    )
+                                },
+                                { 
+                                    key: 'paciente', 
+                                    label: 'Paciente',
+                                    render: (turno) => (
+                                        `${turno.paciente_nombre || ''} ${turno.paciente_apellido || ''}`
+                                    )
+                                },
+                                { 
+                                    key: 'medico', 
+                                    label: 'Médico',
+                                    render: (turno) => (
+                                        `Dr./Dra. ${turno.medico_nombre || ''} ${turno.medico_apellido || ''}`
+                                    )
+                                },
+                                { 
+                                    key: 'especialidad', 
+                                    label: 'Especialidad',
+                                    render: (turno) => turno.especialidad_nombre || 'N/A'
+                                },
+                                { 
+                                    key: 'duracion_minutos', 
+                                    label: 'Duración',
+                                    render: (turno) => `${turno.duracion_minutos} min`
+                                }
+                            ]}
+                        />
+                    )}
                 </CardBody>
             </Card>
         </>

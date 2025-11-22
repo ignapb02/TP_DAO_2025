@@ -123,3 +123,13 @@ def atender_turno(id_turno):
         print(f"Error al atender turno: {str(e)}")
         print(traceback.format_exc())
         return jsonify({"error": f"Error al atender turno: {str(e)}"}), 500
+
+
+@turno_bp.get("/hoy/pendientes")
+def turnos_pendientes_hoy():
+    """Obtener turnos pendientes para hoy"""
+    try:
+        turnos = TurnoService.obtener_turnos_pendientes_hoy()
+        return jsonify([t.to_dict() for t in turnos])
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
