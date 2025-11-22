@@ -2,12 +2,27 @@ from flask_mail import Mail, Message
 from flask import current_app
 import os
 
+
 class EmailService:
-    mail = None
+   
+    _instance = None
+    _mail = None
     
-    @staticmethod
-    def init_mail(app):
-        """Inicializar Flask-Mail con la aplicación"""
+    def __new__(cls):
+        if cls._instance is None:
+            cls._instance = super(EmailService, cls).__new__(cls)
+        return cls._instance
+    
+    @classmethod
+    def get_instance(cls):
+        
+        if cls._instance is None:
+            cls._instance = cls()
+        return cls._instance
+    
+    @classmethod
+    def init_mail(cls, app):
+        
         # Configuración SMTP - usar variables de entorno o valores por defecto para desarrollo
         app.config['MAIL_SERVER'] = os.getenv('MAIL_SERVER', 'smtp.gmail.com')
         app.config['MAIL_PORT'] = int(os.getenv('MAIL_PORT', '587'))
@@ -17,15 +32,24 @@ class EmailService:
         app.config['MAIL_PASSWORD'] = os.getenv('MAIL_PASSWORD', '')
         app.config['MAIL_DEFAULT_SENDER'] = os.getenv('MAIL_DEFAULT_SENDER', 'turnero@clinica.com')
         
-        EmailService.mail = Mail(app)
-        return EmailService.mail
+        if cls._mail is None:
+            cls._mail = Mail(app)
+        else:
+            cls._mail.init_app(app)
+        
+        return cls._mail
     
-    @staticmethod
-    def enviar_recordatorio_turno(turno, paciente, medico, especialidad):
+    @classmethod
+    def get_mail(cls):
+        """Retorna la instancia de Flask-Mail"""
+        return cls._mail
+    
+    @classmethod
+    def enviar_recordatorio_turno(cls, turno, paciente, medico, especialidad):
         """Enviar email de recordatorio de turno"""
-        if not EmailService.mail:
+        if not cls._mail:
             print("⚠️ EmailService no inicializado - simulating email send")
-            return EmailService._simulate_email(turno, paciente, medico, especialidad)
+            return cls._simulate_email(turno, paciente, medico, especialidad)
         
         if not paciente.email:
             raise ValueError(f"El paciente {paciente.nombre} {paciente.apellido} no tiene email registrado")
@@ -100,7 +124,7 @@ class EmailService:
                 body=text_body
             )
             
-            EmailService.mail.send(msg)
+            cls._mail.send(msg)
             print(f"✅ Email enviado a {paciente.email} para turno {turno.id_turno}")
             return True
             
@@ -108,8 +132,8 @@ class EmailService:
             print(f"❌ Error enviando email a {paciente.email}: {str(e)}")
             raise e
     
-    @staticmethod
-    def _simulate_email(turno, paciente, medico, especialidad):
+    @classmethod
+    def _simulate_email(cls, turno, paciente, medico, especialidad):
         """Simular envío de email para desarrollo/testing"""
         print(f"""
         📧 SIMULANDO ENVÍO DE EMAIL:
@@ -127,10 +151,10 @@ class EmailService:
         """)
         return True
     
-    @staticmethod
-    def test_email_config():
+    @classmethod
+    def test_email_config(cls):
         """Verificar configuración de email"""
-        if not EmailService.mail:
+        if not cls._mail:
             return {"status": "error", "message": "EmailService no inicializado"}
         
         config = current_app.config
