@@ -49,7 +49,20 @@ class MedicoService:
         if any(str(m.dni) == str(dni) for m in medicos):
             raise ValueError("El DNI ya está registrado.")
 
-        return MedicoRepository.crear(nombre_str, apellido_str, matricula_str, email_str, dni, telefono, password, rol)
+        # Crear el médico
+        medico = MedicoRepository.crear(nombre_str, apellido_str, matricula_str, email_str, dni, telefono, password, rol)
+        
+        # Enviar email con credenciales si se proporcionó password
+        if password:
+            try:
+                from backend.services.email_service import EmailService
+                EmailService.enviar_credenciales_medico(medico, password)
+                print(f"✅ Email de credenciales enviado al médico {medico.email}")
+            except Exception as e:
+                print(f"⚠️ No se pudo enviar email de credenciales al médico {medico.email}: {str(e)}")
+                # No fallar la creación si el email falla
+        
+        return medico
 
     @staticmethod
     def obtener_todos():

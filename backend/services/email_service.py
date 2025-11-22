@@ -132,38 +132,94 @@ class EmailService:
             print(f"❌ Error enviando email a {paciente.email}: {str(e)}")
             raise e
     
-    @classmethod
-    def _simulate_email(cls, turno, paciente, medico, especialidad):
-        """Simular envío de email para desarrollo/testing"""
-        print(f"""
-        📧 SIMULANDO ENVÍO DE EMAIL:
-        Para: {paciente.email or 'NO_EMAIL'}
-        Asunto: Recordatorio: Turno médico - {turno.fecha} {turno.hora}
-        
-        Estimado/a {paciente.nombre} {paciente.apellido},
-        Le recordamos su turno:
-        - Fecha: {turno.fecha}
-        - Hora: {turno.hora}
-        - Médico: Dr./Dra. {medico.nombre} {medico.apellido}
-        - Especialidad: {especialidad.nombre}
-        
-        ✅ Email simulado exitosamente
-        """)
-        return True
     
     @classmethod
-    def test_email_config(cls):
-        """Verificar configuración de email"""
+    def enviar_credenciales_medico(cls, medico, password):
+        """Enviar email con credenciales de acceso al médico"""
         if not cls._mail:
-            return {"status": "error", "message": "EmailService no inicializado"}
+            print("⚠️ EmailService no inicializado - simulating email send")
+            return cls._simulate_credenciales_email(medico, password)
         
-        config = current_app.config
-        return {
-            "status": "ok",
-            "server": config.get('MAIL_SERVER'),
-            "port": config.get('MAIL_PORT'),
-            "username": config.get('MAIL_USERNAME'),
-            "default_sender": config.get('MAIL_DEFAULT_SENDER'),
-            "tls": config.get('MAIL_USE_TLS'),
-            "ssl": config.get('MAIL_USE_SSL')
-        }
+        if not medico.email:
+            raise ValueError(f"El médico {medico.nombre} {medico.apellido} no tiene email registrado")
+        
+        try:
+            subject = "Bienvenido al Sistema de Turnos - Credenciales de Acceso"
+            
+            # Plantilla HTML del email
+            html_body = f"""
+            <html>
+            <body style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+                <div style="background-color: #f8f9fa; padding: 20px; border-radius: 8px;">
+                    <h2 style="color: #007bff; text-align: center;">🏥 Bienvenido al Sistema de Turnos</h2>
+                    
+                    <div style="background-color: white; padding: 20px; border-radius: 8px; margin: 20px 0;">
+                        <p>Estimado/a <strong>Dr./Dra. {medico.nombre} {medico.apellido}</strong>,</p>
+                        
+                        <p>Se ha creado una cuenta para usted en el Sistema de Turnos Médicos.</p>
+                        
+                        <div style="background-color: #e7f3ff; padding: 20px; border-radius: 6px; margin: 20px 0; border-left: 4px solid #007bff;">
+                            <p style="margin: 0 0 10px 0;"><strong>🔐 Sus credenciales de acceso:</strong></p>
+                            <p style="margin: 5px 0;"><strong>Usuario (Email):</strong> {medico.email}</p>
+                            <p style="margin: 5px 0;"><strong>Contraseña:</strong> {password}</p>
+                            <p style="margin: 5px 0;"><strong>Matrícula:</strong> {medico.matricula}</p>
+                        </div>
+                        
+                        <div style="background-color: #fff3cd; padding: 15px; border-radius: 6px; margin: 20px 0; border-left: 4px solid #ffc107;">
+                            <p style="margin: 0;"><strong>⚠️ Importante:</strong></p>
+                            <ul style="margin: 10px 0; padding-left: 20px;">
+                                <li>Por favor, cambie su contraseña al iniciar sesión por primera vez</li>
+                                <li>No comparta estas credenciales con nadie</li>
+                                <li>Guarde este correo en un lugar seguro</li>
+                            </ul>
+                        </div>
+                        
+                        <p>Puede acceder al sistema utilizando su email como usuario y la contraseña proporcionada.</p>
+                        
+                        <p>Saludos cordiales,<br>
+                        <strong>Administración - Turnero Médico</strong></p>
+                    </div>
+                </div>
+            </body>
+            </html>
+            """
+            
+            # Versión texto plano
+            text_body = f"""
+            Bienvenido al Sistema de Turnos Médicos
+            
+            Estimado/a Dr./Dra. {medico.nombre} {medico.apellido},
+            
+            Se ha creado una cuenta para usted en el Sistema de Turnos Médicos.
+            
+            Sus credenciales de acceso:
+            Usuario (Email): {medico.email}
+            Contraseña: {password}
+            Matrícula: {medico.matricula}
+            
+            IMPORTANTE:
+            - Por favor, cambie su contraseña al iniciar sesión por primera vez
+            - No comparta estas credenciales con nadie
+            - Guarde este correo en un lugar seguro
+            
+            Puede acceder al sistema utilizando su email como usuario y la contraseña proporcionada.
+            
+            Saludos cordiales,
+            Administración - Turnero Médico
+            """
+            
+            msg = Message(
+                subject=subject,
+                recipients=[medico.email],
+                html=html_body,
+                body=text_body
+            )
+            
+            cls._mail.send(msg)
+            print(f"✅ Email de credenciales enviado a {medico.email}")
+            return True
+            
+        except Exception as e:
+            print(f"❌ Error enviando email a {medico.email}: {str(e)}")
+            raise e
+    
