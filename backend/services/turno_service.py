@@ -326,3 +326,59 @@ class TurnoService:
         turnos_hoy.sort(key=lambda t: t.hora)
         
         return turnos_hoy
+    
+    @staticmethod
+    def obtener_horarios_disponibles(medico_id, fecha, duracion_nuevo_turno=30):
+        """Obtener horarios disponibles y ocupados para un médico en una fecha considerando la duración del nuevo turno"""
+        # Obtener turnos existentes del médico en esa fecha
+        turnos_medico = TurnoRepository.obtener_por_medico(medico_id)
+        turnos_fecha = [t for t in turnos_medico if t.fecha == fecha and t.estado != 'cancelado']
+        
+        print(f"🔍 Verificando horarios para médico {medico_id} en fecha {fecha}")
+        print(f"📋 Turnos existentes: {len(turnos_fecha)}")
+        print(f"⏱️ Duración nuevo turno: {duracion_nuevo_turno} minutos")
+        
+        # Horario de trabajo: 08:00 a 20:00
+        hora_inicio = 8 * 60  # 08:00 en minutos
+        hora_fin = 20 * 60    # 20:00 en minutos
+        intervalo = 30        # Intervalos de 30 minutos
+        
+        horarios = []
+        for minutos in range(hora_inicio, hora_fin, intervalo):
+            hora_str = f"{minutos // 60:02d}:{minutos % 60:02d}"
+            
+            # Calcular el fin del nuevo turno propuesto
+            nuevo_turno_fin = minutos + duracion_nuevo_turno
+            
+            # Verificar que el turno no exceda las 20:00
+            if nuevo_turno_fin > hora_fin:
+                horarios.append({
+                    "hora": hora_str,
+                    "disponible": False
+                })
+                continue
+            
+            # Verificar si hay conflicto con turnos existentes
+            ocupado = False
+            for turno in turnos_fecha:
+                turno_inicio = TurnoService.convertir_hora_a_minutos(turno.hora)
+                turno_fin_existente = turno_inicio + turno.duracion_minutos
+                
+                # Verificar si hay superposición entre el nuevo turno y el turno existente
+                # Hay superposición si:
+                # - El nuevo turno empieza antes de que termine el turno existente Y
+                # - El nuevo turno termina después de que empiece el turno existente
+                if minutos < turno_fin_existente and nuevo_turno_fin > turno_inicio:
+                    ocupado = True
+                    print(f"❌ {hora_str} ocupado: nuevo turno [{minutos}-{nuevo_turno_fin}] solapa con turno existente [{turno_inicio}-{turno_fin_existente}]")
+                    break
+            
+            if not ocupado:
+                print(f"✅ {hora_str} disponible")
+            
+            horarios.append({
+                "hora": hora_str,
+                "disponible": not ocupado
+            })
+        
+        return horarios

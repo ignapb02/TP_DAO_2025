@@ -133,3 +133,20 @@ def turnos_pendientes_hoy():
         return jsonify([t.to_dict() for t in turnos])
     except Exception as e:
         return jsonify({"error": str(e)}), 500
+
+
+@turno_bp.get("/horarios-disponibles")
+def obtener_horarios_disponibles():
+    """Obtener horarios disponibles para un médico en una fecha específica"""
+    medico_id = request.args.get("medico_id", type=int)
+    fecha = request.args.get("fecha")
+    duracion_minutos = request.args.get("duracion_minutos", type=int, default=30)
+    
+    if not medico_id or not fecha:
+        return jsonify({"error": "medico_id y fecha son requeridos"}), 400
+    
+    try:
+        horarios = TurnoService.obtener_horarios_disponibles(medico_id, fecha, duracion_minutos)
+        return jsonify(horarios), 200
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500

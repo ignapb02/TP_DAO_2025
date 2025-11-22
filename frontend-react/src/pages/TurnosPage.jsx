@@ -32,6 +32,9 @@ export default function TurnosPage({ showAlert }) {
     const [error, setError] = useState('');
     const [success, setSuccess] = useState('');
     const [isSubmitting, setIsSubmitting] = useState(false);
+    const [medicosDisponibles, setMedicosDisponibles] = useState([]);
+    const [horariosDisponibles, setHorariosDisponibles] = useState([]);
+    const [loadingHorarios, setLoadingHorarios] = useState(false);
     const [procesandoRecordatorios, setProcesandoRecordatorios] = useState(false);
     const [estadoChanging, setEstadoChanging] = useState(null);
     const [filtros, setFiltros] = useState({
@@ -101,6 +104,8 @@ export default function TurnosPage({ showAlert }) {
         });
         setError('');
         setSuccess('');
+        setMedicosDisponibles([]);
+        setHorariosDisponibles([]);
         setIsModalOpen(true);
     };
 
@@ -132,12 +137,81 @@ export default function TurnosPage({ showAlert }) {
         setSuccess('');
     };
 
-    const handleInputChange = (e) => {
+    const handleInputChange = async (e) => {
         const { name, value } = e.target;
-        setFormData(prev => ({
-            ...prev,
+        
+        // Actualizar formData primero
+        const updatedFormData = {
+            ...formData,
             [name]: name === 'duracion_minutos' ? parseInt(value) : value
-        }));
+        };
+        
+        setFormData(updatedFormData);
+
+        // Si cambia la especialidad, cargar médicos con esa especialidad
+        if (name === 'especialidad_id' && value) {
+            try {
+                const response = await axiosClient.get(`/medicos-especialidades/especialidad/${value}/medicos`);
+                // La respuesta ya viene con los objetos médico completos
+                setMedicosDisponibles(response.data);
+                // Limpiar médico, fecha y hora seleccionados
+                setFormData(prev => ({
+                    ...prev,
+                    medico_id: '',
+                    fecha: '',
+                    hora: ''
+                }));
+                setHorariosDisponibles([]);
+            } catch (err) {
+                console.error('Error al cargar médicos:', err);
+                setMedicosDisponibles([]);
+            }
+            return;
+        }
+
+        // Si cambia el médico, la fecha o la duración, cargar horarios disponibles
+        const medicoId = name === 'medico_id' ? value : updatedFormData.medico_id;
+        const fecha = name === 'fecha' ? value : updatedFormData.fecha;
+        const duracion = name === 'duracion_minutos' ? parseInt(value) : updatedFormData.duracion_minutos;
+        
+        if ((name === 'medico_id' || name === 'fecha' || name === 'duracion_minutos') && medicoId && fecha) {
+            await cargarHorariosDisponibles(medicoId, fecha, duracion);
+        }
+    };
+
+    const cargarHorariosDisponibles = async (medicoId, fecha, duracionMinutos = 30) => {
+        setLoadingHorarios(true);
+        console.log(`🔍 Cargando horarios para médico ${medicoId}, fecha ${fecha}, duración ${duracionMinutos} min`);
+        try {
+            const response = await axiosClient.get('/turnos/horarios-disponibles', {
+                params: { 
+                    medico_id: medicoId, 
+                    fecha: fecha,
+                    duracion_minutos: duracionMinutos
+                }
+            });
+            console.log('📋 Horarios recibidos:', response.data);
+            const disponibles = response.data.filter(h => h.disponible).length;
+            const ocupados = response.data.filter(h => !h.disponible).length;
+            console.log(`✅ ${disponibles} disponibles, ❌ ${ocupados} ocupados`);
+            
+            setHorariosDisponibles(response.data);
+            
+            // Si el horario seleccionado ya no está disponible, limpiarlo
+            const horaActual = formData.hora;
+            if (horaActual) {
+                const horarioSeleccionado = response.data.find(h => h.hora === horaActual);
+                if (horarioSeleccionado && !horarioSeleccionado.disponible) {
+                    console.log(`⚠️ Horario ${horaActual} ya no disponible, limpiando selección`);
+                    setFormData(prev => ({ ...prev, hora: '' }));
+                }
+            }
+        } catch (err) {
+            console.error('Error al cargar horarios:', err);
+            setHorariosDisponibles([]);
+        } finally {
+            setLoadingHorarios(false);
+        }
     };
 
     const getDetailedErrorMessage = (err) => {
@@ -606,41 +680,22 @@ export default function TurnosPage({ showAlert }) {
                 {success && <Alert type="success" message={success} />}
 
                 <Form onSubmit={handleSubmit}>
-                    <FormRow>
-                        <FormGroup label="Paciente" style={{ flex: 1 }}>
-                            <select
-                                name="paciente_id"
-                                value={formData.paciente_id}
-                                onChange={handleInputChange}
-                                required
-                                style={{ width: '100%', padding: '8px', borderRadius: '4px', border: '1px solid #ddd' }}
-                            >
-                                <option value="">Selecciona un paciente</option>
-                                {pacientes.map(p => (
-                                    <option key={p.id_paciente} value={p.id_paciente}>
-                                        {p.nombre} {p.apellido}
-                                    </option>
-                                ))}
-                            </select>
-                        </FormGroup>
-
-                        <FormGroup label="Médico" style={{ flex: 1 }}>
-                            <select
-                                name="medico_id"
-                                value={formData.medico_id}
-                                onChange={handleInputChange}
-                                required
-                                style={{ width: '100%', padding: '8px', borderRadius: '4px', border: '1px solid #ddd' }}
-                            >
-                                <option value="">Selecciona un médico</option>
-                                {medicos.map(m => (
-                                    <option key={m.id_medico} value={m.id_medico}>
-                                        {m.nombre} {m.apellido}
-                                    </option>
-                                ))}
-                            </select>
-                        </FormGroup>
-                    </FormRow>
+                    <FormGroup label="Paciente">
+                        <select
+                            name="paciente_id"
+                            value={formData.paciente_id}
+                            onChange={handleInputChange}
+                            required
+                            style={{ width: '100%', padding: '8px', borderRadius: '4px', border: '1px solid #ddd' }}
+                        >
+                            <option value="">Selecciona un paciente</option>
+                            {pacientes.map(p => (
+                                <option key={p.id_paciente} value={p.id_paciente}>
+                                    {p.nombre} {p.apellido}
+                                </option>
+                            ))}
+                        </select>
+                    </FormGroup>
 
                     <FormGroup label="Especialidad">
                         <select
@@ -650,10 +705,41 @@ export default function TurnosPage({ showAlert }) {
                             required
                             style={{ width: '100%', padding: '8px', borderRadius: '4px', border: '1px solid #ddd' }}
                         >
-                            <option value="">Selecciona una especialidad</option>
+                            <option value="">1. Primero selecciona una especialidad</option>
                             {especialidades.map(e => (
                                 <option key={e.id_especialidad} value={e.id_especialidad}>
                                     {e.nombre}
+                                </option>
+                            ))}
+                        </select>
+                    </FormGroup>
+
+                    <FormGroup label="Médico">
+                        <select
+                            name="medico_id"
+                            value={formData.medico_id}
+                            onChange={handleInputChange}
+                            required
+                            disabled={!formData.especialidad_id}
+                            style={{ 
+                                width: '100%', 
+                                padding: '8px', 
+                                borderRadius: '4px', 
+                                border: '1px solid #ddd',
+                                backgroundColor: !formData.especialidad_id ? '#f5f5f5' : 'white',
+                                cursor: !formData.especialidad_id ? 'not-allowed' : 'pointer'
+                            }}
+                        >
+                            <option value="">
+                                {!formData.especialidad_id 
+                                    ? '2. Selecciona primero una especialidad' 
+                                    : medicosDisponibles.length === 0 
+                                    ? 'No hay médicos con esta especialidad' 
+                                    : 'Selecciona un médico'}
+                            </option>
+                            {medicosDisponibles.map(m => (
+                                <option key={m.id_medico} value={m.id_medico}>
+                                    Dr./Dra. {m.nombre} {m.apellido}
                                 </option>
                             ))}
                         </select>
@@ -667,33 +753,105 @@ export default function TurnosPage({ showAlert }) {
                                 value={formData.fecha}
                                 onChange={handleInputChange}
                                 required
-                                style={{ width: '100%', padding: '8px', borderRadius: '4px', border: '1px solid #ddd' }}
+                                disabled={!formData.medico_id}
+                                min={new Date().toISOString().split('T')[0]}
+                                style={{ 
+                                    width: '100%', 
+                                    padding: '8px', 
+                                    borderRadius: '4px', 
+                                    border: '1px solid #ddd',
+                                    backgroundColor: !formData.medico_id ? '#f5f5f5' : 'white',
+                                    cursor: !formData.medico_id ? 'not-allowed' : 'pointer'
+                                }}
                             />
                         </FormGroup>
 
-                        <FormGroup label="Hora" style={{ flex: 1 }}>
-                            <input
-                                type="time"
-                                name="hora"
-                                value={formData.hora}
+                        <FormGroup label="Duración" style={{ flex: 1 }}>
+                            <select
+                                name="duracion_minutos"
+                                value={formData.duracion_minutos}
                                 onChange={handleInputChange}
-                                required
                                 style={{ width: '100%', padding: '8px', borderRadius: '4px', border: '1px solid #ddd' }}
-                            />
+                            >
+                                <option value="30">30 minutos</option>
+                                <option value="45">45 minutos</option>
+                                <option value="60">1 hora</option>
+                                <option value="90">1.5 horas</option>
+                                <option value="120">2 horas</option>
+                            </select>
                         </FormGroup>
                     </FormRow>
 
-                    <FormGroup label="Duración (minutos)">
-                        <input
-                            type="number"
-                            name="duracion_minutos"
-                            value={formData.duracion_minutos}
-                            onChange={handleInputChange}
-                            min="15"
-                            max="480"
-                            step="15"
-                            style={{ width: '100%', padding: '8px', borderRadius: '4px', border: '1px solid #ddd' }}
-                        />
+                    <FormGroup label="Horario">
+                        {!formData.medico_id || !formData.fecha ? (
+                            <div style={{ 
+                                padding: '12px', 
+                                backgroundColor: '#f8f9fa', 
+                                border: '1px solid #dee2e6', 
+                                borderRadius: '4px',
+                                color: '#6c757d',
+                                textAlign: 'center'
+                            }}>
+                                3. Selecciona médico y fecha para ver horarios disponibles
+                            </div>
+                        ) : loadingHorarios ? (
+                            <div style={{ textAlign: 'center', padding: '20px' }}>
+                                <Loader />
+                            </div>
+                        ) : horariosDisponibles.length === 0 ? (
+                            <div style={{ 
+                                padding: '12px', 
+                                backgroundColor: '#fff3cd', 
+                                border: '1px solid #ffc107', 
+                                borderRadius: '4px',
+                                color: '#856404'
+                            }}>
+                                No hay horarios disponibles
+                            </div>
+                        ) : (
+                            <div style={{ 
+                                display: 'grid', 
+                                gridTemplateColumns: 'repeat(auto-fill, minmax(100px, 1fr))', 
+                                gap: '8px',
+                                maxHeight: '200px',
+                                overflowY: 'auto',
+                                padding: '8px',
+                                border: '1px solid #ddd',
+                                borderRadius: '4px'
+                            }}>
+                                {horariosDisponibles.map(horario => (
+                                    <button
+                                        key={horario.hora}
+                                        type="button"
+                                        onClick={() => {
+                                            if (horario.disponible) {
+                                                setFormData(prev => ({ ...prev, hora: horario.hora }));
+                                            }
+                                        }}
+                                        disabled={!horario.disponible}
+                                        style={{
+                                            padding: '10px',
+                                            border: formData.hora === horario.hora ? '2px solid #007bff' : '1px solid #ddd',
+                                            borderRadius: '4px',
+                                            backgroundColor: !horario.disponible 
+                                                ? '#dc3545' 
+                                                : formData.hora === horario.hora 
+                                                ? '#007bff' 
+                                                : 'white',
+                                            color: !horario.disponible || formData.hora === horario.hora ? 'white' : '#333',
+                                            cursor: horario.disponible ? 'pointer' : 'not-allowed',
+                                            fontSize: '0.9rem',
+                                            fontWeight: formData.hora === horario.hora ? 'bold' : 'normal',
+                                            transition: 'all 0.2s'
+                                        }}
+                                        title={!horario.disponible ? 'Horario ocupado' : 'Horario disponible'}
+                                    >
+                                        {horario.hora}
+                                        {!horario.disponible && ' 🚫'}
+                                    </button>
+                                ))}
+                            </div>
+                        )}
                     </FormGroup>
 
                     <FormActions style={{ marginTop: '20px', display: 'flex', gap: '10px', justifyContent: 'flex-end' }}>
