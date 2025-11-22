@@ -7,8 +7,10 @@ import axiosClient from '../api/axiosClient';
 export default function ReportesPage({ showAlert }) {
     const [medicos, setMedicos] = useState([]);
     const [especialidades, setEspecialidades] = useState([]);
-    const [filters, setFilters] = useState({ medico_id: '', desde: '', hasta: '' });
+    const [filters, setFilters] = useState({ medico_id: '', periodo: 'hoy', desde: '', hasta: '' });
+    const [modoManual, setModoManual] = useState(false);
     const [loading, setLoading] = useState(false);
+    const [generandoPDF, setGenerandoPDF] = useState(false);
 
     const [turnosMedico, setTurnosMedico] = useState([]);
     const [turnosPorEsp, setTurnosPorEsp] = useState([]);
@@ -31,12 +33,58 @@ export default function ReportesPage({ showAlert }) {
         loadBase();
     }, []);
 
+    const calcularFechas = (periodo) => {
+        const hoy = new Date();
+        const hasta = hoy.toISOString().split('T')[0];
+        let desde = '';
+
+        switch (periodo) {
+            case 'hoy':
+                desde = hasta;
+                break;
+            case 'semana':
+                const semanaAtras = new Date(hoy);
+                semanaAtras.setDate(hoy.getDate() - 7);
+                desde = semanaAtras.toISOString().split('T')[0];
+                break;
+            case 'mes':
+                const mesAtras = new Date(hoy);
+                mesAtras.setMonth(hoy.getMonth() - 1);
+                desde = mesAtras.toISOString().split('T')[0];
+                break;
+            case '3meses':
+                const tresMeses = new Date(hoy);
+                tresMeses.setMonth(hoy.getMonth() - 3);
+                desde = tresMeses.toISOString().split('T')[0];
+                break;
+            case '6meses':
+                const seisMeses = new Date(hoy);
+                seisMeses.setMonth(hoy.getMonth() - 6);
+                desde = seisMeses.toISOString().split('T')[0];
+                break;
+            case 'año':
+                const añoAtras = new Date(hoy);
+                añoAtras.setFullYear(hoy.getFullYear() - 1);
+                desde = añoAtras.toISOString().split('T')[0];
+                break;
+            default:
+                desde = hasta;
+        }
+
+        return { desde, hasta };
+    };
+
     const applyFilters = async () => {
         setLoading(true);
         try {
+            // Usar fechas manuales si está en modo manual, sino calcular del período
+            const { desde, hasta } = modoManual 
+                ? { desde: filters.desde, hasta: filters.hasta }
+                : calcularFechas(filters.periodo);
+            
             const params = new URLSearchParams();
-            if (filters.desde) params.set('desde', filters.desde);
-            if (filters.hasta) params.set('hasta', filters.hasta);
+            if (desde) params.set('desde', desde);
+            if (hasta) params.set('hasta', hasta);
 
             // Turnos por médico (si se selecciona)
             if (filters.medico_id) {
@@ -71,38 +119,138 @@ export default function ReportesPage({ showAlert }) {
 
     const maxVal = Math.max(1, asistencia.asistencias, asistencia.inasistencias, asistencia.pendientes);
 
+    const generarPDF = async () => {
+        setGenerandoPDF(true);
+        
+        try {
+            // Usar fechas manuales si está en modo manual, sino calcular del período
+            const { desde, hasta } = modoManual 
+                ? { desde: filters.desde, hasta: filters.hasta }
+                : calcularFechas(filters.periodo);
+            
+            // Construir query params
+            const params = new URLSearchParams();
+            if (filters.medico_id) params.append('medico_id', filters.medico_id);
+            if (desde) params.append('desde', desde);
+            if (hasta) params.append('hasta', hasta);
+            
+            // Descargar PDF desde el backend
+            const response = await axiosClient.get(`/reportes/pdf?${params.toString()}`, {
+                responseType: 'blob'
+            });
+            
+            // Crear un enlace para descargar el archivo
+            const url = window.URL.createObjectURL(new Blob([response.data]));
+            const link = document.createElement('a');
+            link.href = url;
+            link.setAttribute('download', `reporte_turnos_${new Date().toISOString().split('T')[0]}.pdf`);
+            document.body.appendChild(link);
+            link.click();
+            link.remove();
+            window.URL.revokeObjectURL(url);
+            
+            showAlert && showAlert('PDF descargado exitosamente', 'success', 3000);
+        } catch (error) {
+            console.error('Error al generar PDF:', error);
+            showAlert && showAlert('Error al generar el PDF', 'error', 3000);
+        } finally {
+            setGenerandoPDF(false);
+        }
+    };
+
     return (
         <>
             <Card>
                 <CardHeader>
-                    <h3>Reportes</h3>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                        <h3>Reportes</h3>
+                        <Button
+                            onClick={generarPDF}
+                            variant="primary"
+                            disabled={generandoPDF || (!turnosMedico.length && !turnosPorEsp.length && !pacientesAtendidos.total)}
+                        >
+                            {generandoPDF ? '⏳ Generando...' : '📄 Descargar PDF'}
+                        </Button>
+                    </div>
                 </CardHeader>
                 <CardBody>
-                    <div className="filters" style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 12, alignItems: 'end' }}>
-                        <div className="form-group">
-                            <label>Médico (opcional)</label>
-                            <select
-                                value={filters.medico_id}
-                                onChange={(e) => setFilters(f => ({ ...f, medico_id: e.target.value }))}
-                            >
-                                <option value="">-- Todos --</option>
-                                {medicos.map(m => (
-                                    <option key={m.id_medico} value={m.id_medico}>{m.nombre} {m.apellido}</option>
-                                ))}
-                            </select>
-                        </div>
-                        <div className="form-group">
-                            <label>Desde</label>
-                            <input type="date" value={filters.desde} onChange={(e) => setFilters(f => ({ ...f, desde: e.target.value }))} />
-                        </div>
-                        <div className="form-group">
-                            <label>Hasta</label>
-                            <input type="date" value={filters.hasta} onChange={(e) => setFilters(f => ({ ...f, hasta: e.target.value }))} />
-                        </div>
-                        <div>
-                            <Button onClick={applyFilters}>Aplicar</Button>
-                        </div>
+                    <div style={{ marginBottom: 16 }}>
+                        <Button 
+                            variant={modoManual ? 'secondary' : 'primary'}
+                            onClick={() => setModoManual(!modoManual)}
+                            style={{ fontSize: '0.9rem', padding: '6px 12px' }}
+                        >
+                            {modoManual ? '📅 Usar períodos predefinidos' : '📆 Seleccionar fechas manualmente'}
+                        </Button>
                     </div>
+
+                    {!modoManual ? (
+                        <div className="filters" style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 12, alignItems: 'end' }}>
+                            <div className="form-group">
+                                <label>Médico (opcional)</label>
+                                <select
+                                    value={filters.medico_id}
+                                    onChange={(e) => setFilters(f => ({ ...f, medico_id: e.target.value }))}
+                                >
+                                    <option value="">-- Todos --</option>
+                                    {medicos.map(m => (
+                                        <option key={m.id_medico} value={m.id_medico}>{m.nombre} {m.apellido}</option>
+                                    ))}
+                                </select>
+                            </div>
+                            <div className="form-group">
+                                <label>Período</label>
+                                <select
+                                    value={filters.periodo}
+                                    onChange={(e) => setFilters(f => ({ ...f, periodo: e.target.value }))}
+                                >
+                                    <option value="hoy">Hoy</option>
+                                    <option value="semana">Última semana</option>
+                                    <option value="mes">Último mes</option>
+                                    <option value="3meses">Últimos 3 meses</option>
+                                    <option value="6meses">Últimos 6 meses</option>
+                                    <option value="año">Último año</option>
+                                </select>
+                            </div>
+                            <div>
+                                <Button onClick={applyFilters}>Aplicar</Button>
+                            </div>
+                        </div>
+                    ) : (
+                        <div className="filters" style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 12, alignItems: 'end' }}>
+                            <div className="form-group">
+                                <label>Médico (opcional)</label>
+                                <select
+                                    value={filters.medico_id}
+                                    onChange={(e) => setFilters(f => ({ ...f, medico_id: e.target.value }))}
+                                >
+                                    <option value="">-- Todos --</option>
+                                    {medicos.map(m => (
+                                        <option key={m.id_medico} value={m.id_medico}>{m.nombre} {m.apellido}</option>
+                                    ))}
+                                </select>
+                            </div>
+                            <div className="form-group">
+                                <label>Desde</label>
+                                <input 
+                                    type="date" 
+                                    value={filters.desde} 
+                                    onChange={(e) => setFilters(f => ({ ...f, desde: e.target.value }))} 
+                                />
+                            </div>
+                            <div className="form-group">
+                                <label>Hasta</label>
+                                <input 
+                                    type="date" 
+                                    value={filters.hasta} 
+                                    onChange={(e) => setFilters(f => ({ ...f, hasta: e.target.value }))} 
+                                />
+                            </div>
+                            <div>
+                                <Button onClick={applyFilters}>Aplicar</Button>
+                            </div>
+                        </div>
+                    )}
 
                     {loading && (
                         <div style={{ padding: 16 }}><Loader /></div>

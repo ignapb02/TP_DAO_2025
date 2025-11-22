@@ -69,6 +69,11 @@ class MedicoService:
         return MedicoRepository.obtener_todos()
 
     @staticmethod
+    def obtener_por_id(id_medico):
+        """Alias para obtener_medico - retorna el médico por ID o None"""
+        return MedicoRepository.obtener_por_id(id_medico)
+    
+    @staticmethod
     def obtener_medico(id_medico):
         medico = MedicoRepository.obtener_por_id(id_medico)
         if not medico:
