@@ -40,11 +40,13 @@ export default function TurnosPage({ showAlert }) {
     const [filtros, setFiltros] = useState({
         medico_id: '',
         especialidad_id: '',
-        estado: ''
+        estado: 'pendiente',
+        fecha: new Date().toISOString().split('T')[0]
     });
     const [ordenamiento, setOrdenamiento] = useState({
         campos: [
-            { campo: 'fecha', direccion: 'asc' }
+            { campo: 'fecha', direccion: 'asc' },
+            { campo: 'hora', direccion: 'asc' }
         ]
     });
 
@@ -62,7 +64,7 @@ export default function TurnosPage({ showAlert }) {
             sortable: true,
             render: (row) => row.hora
         },
-        { key: 'medico', label: 'Médico', render: (row) => `${row.medico?.nombre || '-'} ${row.medico?.apellido || ''}`.trim() },
+        { key: 'medico', label: 'Médico', render: (row) => `${row.medico?.apellido || '-'} ${row.medico?.nombre || ''}`.trim() },
         { key: 'paciente', label: 'Paciente', render: (row) => `${row.paciente?.nombre || '-'} ${row.paciente?.apellido || ''}`.trim() },
         { key: 'especialidad', label: 'Especialidad', render: (row) => row.especialidad?.nombre || '-' },
         { key: 'duracion_minutos', label: 'Duración', render: (row) => `${row.duracion_minutos} min` },
@@ -368,7 +370,8 @@ export default function TurnosPage({ showAlert }) {
         setFiltros({
             medico_id: '',
             especialidad_id: '',
-            estado: ''
+            estado: '',
+            fecha: ''
         });
     };
 
@@ -470,6 +473,9 @@ export default function TurnosPage({ showAlert }) {
             return false;
         }
         if (filtros.estado && t.estado !== filtros.estado) {
+            return false;
+        }
+        if (filtros.fecha && t.fecha !== filtros.fecha) {
             return false;
         }
         return true;
@@ -595,7 +601,37 @@ export default function TurnosPage({ showAlert }) {
                     <h4 style={{ margin: '0 0 12px 0', color: '#333' }}>Filtros</h4>
                 </div>
 
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))', gap: '12px', marginBottom: '12px' }}>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '12px', marginBottom: '12px' }}>
+                    <div>
+                        <label style={{ display: 'block', marginBottom: '6px', fontWeight: '500', fontSize: '0.9rem', color: '#555' }}>
+                            Fecha
+                        </label>
+                        <input
+                            type="date"
+                            name="fecha"
+                            value={filtros.fecha}
+                            onChange={handleFiltroChange}
+                            style={{ width: '100%', padding: '8px', borderRadius: '4px', border: '1px solid #ddd', fontSize: '0.95rem' }}
+                        />
+                    </div>
+
+                    <div>
+                        <label style={{ display: 'block', marginBottom: '6px', fontWeight: '500', fontSize: '0.9rem', color: '#555' }}>
+                            Estado
+                        </label>
+                        <select
+                            name="estado"
+                            value={filtros.estado}
+                            onChange={handleFiltroChange}
+                            style={{ width: '100%', padding: '8px', borderRadius: '4px', border: '1px solid #ddd', fontSize: '0.95rem' }}
+                        >
+                            <option value="">Todos los estados</option>
+                            <option value="pendiente">Pendiente</option>
+                            <option value="completado">Completado</option>
+                            <option value="cancelado">Cancelado</option>
+                        </select>
+                    </div>
+
                     <div>
                         <label style={{ display: 'block', marginBottom: '6px', fontWeight: '500', fontSize: '0.9rem', color: '#555' }}>
                             Médico
@@ -633,26 +669,44 @@ export default function TurnosPage({ showAlert }) {
                             ))}
                         </select>
                     </div>
-
-                    <div>
-                        <label style={{ display: 'block', marginBottom: '6px', fontWeight: '500', fontSize: '0.9rem', color: '#555' }}>
-                            Estado
-                        </label>
-                        <select
-                            name="estado"
-                            value={filtros.estado}
-                            onChange={handleFiltroChange}
-                            style={{ width: '100%', padding: '8px', borderRadius: '4px', border: '1px solid #ddd', fontSize: '0.95rem' }}
-                        >
-                            <option value="">Todos los estados</option>
-                            <option value="pendiente">Pendiente</option>
-                            <option value="completado">Completado</option>
-                            <option value="cancelado">Cancelado</option>
-                        </select>
-                    </div>
                 </div>
 
-                <div style={{ display: 'flex', gap: '8px' }}>
+                <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', alignItems: 'center' }}>
+                    <div style={{ display: 'flex', gap: '8px' }}>
+                        <Button
+                            onClick={() => setFiltros(prev => ({ ...prev, fecha: new Date().toISOString().split('T')[0] }))}
+                            style={{ 
+                                fontSize: '0.85rem', 
+                                padding: '6px 12px',
+                                backgroundColor: filtros.fecha === new Date().toISOString().split('T')[0] ? '#007bff' : '#6c757d',
+                                color: 'white'
+                            }}
+                        >
+                            📅 Hoy
+                        </Button>
+                        <Button
+                            onClick={() => {
+                                const tomorrow = new Date();
+                                tomorrow.setDate(tomorrow.getDate() + 1);
+                                setFiltros(prev => ({ ...prev, fecha: tomorrow.toISOString().split('T')[0] }));
+                            }}
+                            style={{ fontSize: '0.85rem', padding: '6px 12px' }}
+                            className="btn-secondary"
+                        >
+                            Mañana
+                        </Button>
+                        <Button
+                            onClick={() => {
+                                const nextWeek = new Date();
+                                nextWeek.setDate(nextWeek.getDate() + 7);
+                                setFiltros(prev => ({ ...prev, fecha: nextWeek.toISOString().split('T')[0] }));
+                            }}
+                            style={{ fontSize: '0.85rem', padding: '6px 12px' }}
+                            className="btn-secondary"
+                        >
+                            Próxima Semana
+                        </Button>
+                    </div>
                     <Button
                         onClick={limpiarFiltros}
                         className="btn-secondary"
